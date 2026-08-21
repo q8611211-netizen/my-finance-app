@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>財務管理助手</title>
+    
+    <!-- iOS PWA 全螢幕設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="財務助手">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/isometric-folders/180/money-bag.png">
+
+    <style>
+        :root {
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --text-color: #1C1C1E;
+            --secondary-text: #8E8E93;
+            --primary: #007AFF;
+            --danger: #FF3B30;
+            --border-color: #E5E5EA;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --card-bg: #1C1C1E;
+                --text-color: #FFFFFF;
+                --secondary-text: #8E8E93;
+                --border-color: #38383A;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding-bottom: 90px;
+            padding-top: env(safe-area-inset-top);
+        }
+
+        .header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            border-bottom: 0.5px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .logout-btn { color: var(--danger); font-size: 14px; border: none; background: none; cursor: pointer; }
+
+        .container { padding: 16px; }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card h2 { font-size: 16px; margin-bottom: 12px; color: var(--secondary-text); font-weight: 500; }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; color: var(--secondary-text); margin-bottom: 4px; }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 16px;
+        }
+
+        button.btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; }
+        .stat-box { padding: 8px; background: var(--bg-color); border-radius: 8px; }
+        .stat-box .title { font-size: 11px; color: var(--secondary-text); }
+        .stat-box .num { font-size: 14px; font-weight: 600; margin-top: 4px; }
+
+        /* 導覽列 */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 65px;
+            background: var(--card-bg);
+            border-top: 0.5px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--secondary-text);
+            font-size: 10px;
+            border: none;
+            background: none;
+            width: 33%;
+        }
+
+        .nav-item.active { color: var(--primary); }
+        .nav-item svg { width: 22px; height: 22px; fill: currentColor; margin-bottom: 2px; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 0.5px solid var(--border-color);
+        }
+        .list-item:last-child { border-bottom: none; }
+
+        .badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: var(--border-color);
+            color: var(--secondary-text);
+        }
+
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-color);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 登入畫面 -->
+    <div id="loginView" class="login-overlay">
+        <div class="card" style="width: 100%; max-width: 320px;">
+            <h1 style="text-align: center; margin-bottom: 20px;">財務管理助手</h1>
+            <div class="form-group">
+                <label>選擇身分登入</label>
+                <select id="loginSelect">
+                    <option value="admin">管理者 (Admin)</option>
+                </select>
+            </div>
+            <button class="btn-primary" onclick="login()">登入</button>
+        </div>
+    </div>
+
+    <!-- 主要內容 -->
+    <div id="appView" style="display: none;">
+        <div class="header">
+            <h1 id="currentUserTitle">財務助手</h1>
+            <button class="logout-btn" onclick="logout()">切換帳號</button>
+        </div>
+
+        <div class="container">
+            <!-- 管理者視圖 -->
+            <div id="adminSection" class="tab-content">
+                <div class="card">
+                    <h2>新增用戶 (最多 2 位)</h2>
+                    <div class="form-group">
+                        <label>用戶名稱</label>
+                        <input type="text" id="newUserName" placeholder="請輸入名字">
+                    </div>
+                    <button class="btn-primary" onclick="addUser()">新增用戶</button>
+                </div>
+                <div class="card">
+                    <h2>目前用戶列表</h2>
+                    <div id="userList"></div>
+                </div>
+            </div>
+
+            <!-- 用戶功能視圖 -->
+            <div id="userSection">
+                <!-- 1. 預算分配 -->
+                <div id="tabBudget" class="tab-content">
+                    <div class="card">
+                        <h2>1. 收入設定 (631儲蓄法)</h2>
+                        <div class="form-group"><label>月薪</label><input type="number" id="incSalary" value="0" oninput="calcIncome()"></div>
+                        <div class="form-group"><label>安麗收入</label><input type="number" id="incAmway" value="0" oninput="calcIncome()"></div>
+                        <div class="form-group"><label>活存利息</label><input type="number" id="incInterest" value="0" oninput="calcIncome()"></div>
+                        <div class="form-group"><label>中獎發票</label><input type="number" id="incLottery" value="0" oninput="calcIncome()"></div>
+                        
+                        <div style="margin-top:12px; font-weight:bold;">總收入：$<span id="totalIncome">0</span></div>
+                        
+                        <div class="grid-3" style="margin-top: 10px;">
+                            <div class="stat-box"><div class="title">生活必須(60%)</div><div class="num" id="bNeeds">$0</div></div>
+                            <div class="stat-box"><div class="title">投資理財(30%)</div><div class="num" id="bInvest">$0</div></div>
+                            <div class="stat-box"><div class="title">緊急儲備(10%)</div><div class="num" id="bEmergency">$0</div></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2>2. 自定義消費額度調整</h2>
+                        <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 8px;">細項總額需等於預算分配總金額</p>
+                        <div id="customCategories"></div>
+                        <button class="btn-primary" style="margin-top: 10px; background: var(--secondary-text);" onclick="addCategoryPrompt()">+ 新增消費類別</button>
+                        <button class="btn-primary" style="margin-top: 10px;" onclick="saveBudget()">儲存預算配置</button>
+                    </div>
+                </div>
+
+                <!-- 2. 消費記帳 -->
+                <div id="tabRecord" class="tab-content">
+                    <div class="card">
+                        <h2>記錄消費</h2>
+                        <div class="form-group">
+                            <label>金額</label>
+                            <input type="number" id="expAmount" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>用途描述</label>
+                            <input type="text" id="expNote" placeholder="例如：晚餐、買衣服">
+                        </div>
+                        <div class="form-group">
+                            <label>消費類別</label>
+                            <select id="expCategory"></select>
+                        </div>
+                        <button class="btn-primary" onclick="addExpense()">新增記帳</button>
+                    </div>
+
+                    <div class="card">
+                        <h2>近期紀錄</h2>
+                        <div id="expenseHistory"></div>
+                    </div>
+                </div>
+
+                <!-- 3. 餘額統計 -->
+                <div id="tabStats" class="tab-content">
+                    <div class="card">
+                        <h2>本月預算與餘額統計</h2>
+                        <div id="statSummary"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部導覽列 -->
+        <nav class="nav-bar" id="userNav">
+            <button class="nav-item active" onclick="switchTab('tabBudget', this)">
+                <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                預算分配
+            </button>
+            <button class="nav-item" onclick="switchTab('tabRecord', this)">
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2 .9 2 2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                消費記帳
+            </button>
+            <button class="nav-item" onclick="switchTab('tabStats', this)">
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                餘額統計
+            </button>
+        </nav>
+    </div>
+
+    <script>
+        let state = JSON.parse(localStorage.getItem('ios_finance_app')) || {
+            users: [],
+            budgets: {},
+            expenses: []
+        };
+
+        let currentUser = null;
+
+        function saveState() {
+            localStorage.setItem('ios_finance_app', JSON.stringify(state));
+        }
+
+        function init() {
+            updateLoginDropdown();
+        }
+
+        function updateLoginDropdown() {
+            const select = document.getElementById('loginSelect');
+            select.innerHTML = '<option value="admin">管理者 (Admin)</option>';
+            state.users.forEach(u => {
+                select.innerHTML += `<option value="${u.id}">${u.name}</option>`;
+            });
+        }
+
+        function login() {
+            const val = document.getElementById('loginSelect').value;
+            if (val === 'admin') {
+                currentUser = { id: 'admin', name: '管理者' };
+                document.getElementById('adminSection').style.display = 'block';
+                document.getElementById('userSection').style.display = 'none';
+                document.getElementById('userNav').style.display = 'none';
+                renderAdminView();
+            } else {
+                currentUser = state.users.find(u => u.id === val);
+                document.getElementById('adminSection').style.display = 'none';
+                document.getElementById('userSection').style.display = 'block';
+                document.getElementById('userNav').style.display = 'flex';
+                initUserView();
+            }
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('appView').style.display = 'block';
+            document.getElementById('currentUserTitle').innerText = currentUser.name;
+        }
+
+        function logout() {
+            document.getElementById('loginView').style.display = 'flex';
+            document.getElementById('appView').style.display = 'none';
+            updateLoginDropdown();
+        }
+
+        function renderAdminView() {
+            const list = document.getElementById('userList');
+            list.innerHTML = '';
+            state.users.forEach(u => {
+                list.innerHTML += `
+                    <div class="list-item">
+                        <span>${u.name}</span>
+                        <button onclick="deleteUser('${u.id}')" style="color:var(--danger); border:none; background:none;">刪除</button>
+                    </div>
+                `;
+            });
+        }
+
+        function addUser() {
+            if (state.users.length >= 2) {
+                alert('管理者最多只能新增 2 位用戶！');
+                return;
+            }
+            const nameInput = document.getElementById('newUserName');
+            if (!nameInput.value.trim()) return;
+
+            const newUser = { id: 'user_' + Date.now(), name: nameInput.value.trim() };
+            state.users.push(newUser);
+            state.budgets[newUser.id] = {
+                income: { salary: 0, amway: 0, interest: 0, lottery: 0 },
+                categories: { '餐費': 0, '房租': 0 }
+            };
+            saveState();
+            nameInput.value = '';
+            renderAdminView();
+        }
+
+        function deleteUser(id) {
+            state.users = state.users.filter(u => u.id !== id);
+            delete state.budgets[id];
+            state.expenses = state.expenses.filter(e => e.userId !== id);
+            saveState();
+            renderAdminView();
+        }
+
+        function initUserView() {
+            switchTab('tabBudget', document.querySelectorAll('.nav-item')[0]);
+            loadUserBudget();
+            renderExpenseHistory();
+            renderStats();
+        }
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+
+            if (tabId === 'tabRecord') updateCategoryDropdown();
+            if (tabId === 'tabStats') renderStats();
+        }
+
+        function loadUserBudget() {
+            const b = state.budgets[currentUser.id] || { income: {}, categories: {} };
+            document.getElementById('incSalary').value = b.income.salary || 0;
+            document.getElementById('incAmway').value = b.income.amway || 0;
+            document.getElementById('incInterest').value = b.income.interest || 0;
+            document.getElementById('incLottery').value = b.income.lottery || 0;
+            calcIncome();
+
+            const catContainer = document.getElementById('customCategories');
+            catContainer.innerHTML = '';
+            for (let cat in b.categories) {
+                catContainer.innerHTML += `
+                    <div class="form-group" style="display:flex; gap:8px; align-items:center;">
+                        <label style="width:80px; margin:0;">${cat}</label>
+                        <input type="number" class="cat-input" data-cat="${cat}" value="${b.categories[cat]}">
+                    </div>
+                `;
+            }
+        }
+
+        function calcIncome() {
+            const s = Number(document.getElementById('incSalary').value) || 0;
+            const a = Number(document.getElementById('incAmway').value) || 0;
+            const i = Number(document.getElementById('incInterest').value) || 0;
+            const l = Number(document.getElementById('incLottery').value) || 0;
+            const total = s + a + i + l;
+
+            document.getElementById('totalIncome').innerText = total;
+            document.getElementById('bNeeds').innerText = '$' + Math.round(total * 0.6);
+            document.getElementById('bInvest').innerText = '$' + Math.round(total * 0.3);
+            document.getElementById('bEmergency').innerText = '$' + Math.round(total * 0.1);
+        }
+
+        function addCategoryPrompt() {
+            const name = prompt('請輸入新類別名稱：');
+            if (name) {
+                const b = state.budgets[currentUser.id];
+                if (!b.categories[name]) {
+                    b.categories[name] = 0;
+                    saveState();
+                    loadUserBudget();
+                }
+            }
+        }
+
+        function saveBudget() {
+            const s = Number(document.getElementById('incSalary').value) || 0;
+            const a = Number(document.getElementById('incAmway').value) || 0;
+            const i = Number(document.getElementById('incInterest').value) || 0;
+            const l = Number(document.getElementById('incLottery').value) || 0;
+            const totalIncome = s + a + i + l;
+
+            let catTotal = 0;
+            const updatedCategories = {};
+            document.querySelectorAll('.cat-input').forEach(input => {
+                const val = Number(input.value) || 0;
+                catTotal += val;
+                updatedCategories[input.dataset.cat] = val;
+            });
+
+            if (catTotal !== totalIncome) {
+                alert(`消費額度總額 ($${catTotal}) 必須等於預算分配總收入 ($${totalIncome})！`);
+                return;
+            }
+
+            state.budgets[currentUser.id] = {
+                income: { salary: s, amway: a, interest: i, lottery: l },
+                categories: updatedCategories
+            };
+            saveState();
+            alert('預算儲存成功！');
+        }
+
+        function updateCategoryDropdown() {
+            const select = document.getElementById('expCategory');
+            select.innerHTML = '';
+            const cats = state.budgets[currentUser.id]?.categories || {};
+            for (let cat in cats) {
+                select.innerHTML += `<option value="${cat}">${cat}</option>`;
+            }
+        }
+
+        function addExpense() {
+            const amount = Number(document.getElementById('expAmount').value);
+            const note = document.getElementById('expNote').value.trim();
+            const category = document.getElementById('expCategory').value;
+
+            if (!amount || !category) {
+                alert('請輸入金額並選擇類別');
+                return;
+            }
+
+            state.expenses.unshift({
+                id: Date.now(),
+                userId: currentUser.id,
+                amount,
+                note: note || category,
+                category,
+                date: new Date().toLocaleDateString()
+            });
+
+            saveState();
+            document.getElementById('expAmount').value = '';
+            document.getElementById('expNote').value = '';
+            renderExpenseHistory();
+        }
+
+        function renderExpenseHistory() {
+            const container = document.getElementById('expenseHistory');
+            container.innerHTML = '';
+            const userExp = state.expenses.filter(e => e.userId === currentUser.id);
+
+            if (userExp.length === 0) {
+                container.innerHTML = '<div style="color:var(--secondary-text); text-align:center;">尚無消費紀錄</div>';
+                return;
+            }
+
+            userExp.forEach(e => {
+                container.innerHTML += `
+                    <div class="list-item">
+                        <div>
+                            <div>${e.note} <span class="badge">${e.category}</span></div>
+                            <div style="font-size:11px; color:var(--secondary-text);">${e.date}</div>
+                        </div>
+                        <div style="font-weight:600; color:var(--danger);">-$${e.amount}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderStats() {
+            const container = document.getElementById('statSummary');
+            container.innerHTML = '';
+
+            const categories = state.budgets[currentUser.id]?.categories || {};
+            const userExp = state.expenses.filter(e => e.userId === currentUser.id);
+
+            for (let cat in categories) {
+                const budget = categories[cat];
+                const spent = userExp
+                    .filter(e => e.category === cat)
+                    .reduce((sum, e) => sum + e.amount, 0);
+                const remain = budget - spent;
+
+                container.innerHTML += `
+                    <div style="margin-bottom: 12px;">
+                        <div style="display:flex; justify-between; font-size:14px; margin-bottom:4px;">
+                            <span>${cat} (預算: $${budget})</span>
+                            <span style="color: ${remain < 0 ? 'var(--danger)' : 'var(--text-color)'}; font-weight:600;">
+                                餘額: $${remain}
+                            </span>
+                        </div>
+                        <div style="font-size:12px; color:var(--secondary-text);">已消費: $${spent}</div>
+                    </div>
+                    <hr style="border:none; border-top:0.5px solid var(--border-color); margin: 8px 0;">
+                `;
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>
