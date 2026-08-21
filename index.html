@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>財務管理助手 Pro</title>
+    <title>財務管理助手 Pro - 柯基限定版</title>
     
     <!-- iOS PWA 全螢幕設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,25 +16,17 @@
 
     <style>
         :root {
-            --bg-color: #F2F2F7;
+            --bg-color: #FFFDF7;
             --card-bg: #FFFFFF;
-            --text-color: #1C1C1E;
-            --secondary-text: #8E8E93;
-            --primary: #007AFF;
-            --success: #34C759;
-            --warning: #FF9500;
-            --danger: #FF3B30;
-            --border-color: #E5E5EA;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-color: #000000;
-                --card-bg: #1C1C1E;
-                --text-color: #FFFFFF;
-                --secondary-text: #8E8E93;
-                --border-color: #38383A;
-            }
+            --text-color: #4A3E3D;
+            --secondary-text: #968583;
+            --primary: #FF9F43;
+            --primary-light: #FFEAA7;
+            --success: #10AC84;
+            --warning: #EE5253;
+            --danger: #FF6B6B;
+            --border-color: #F7D794;
+            --accent-corgi: #E58E26;
         }
 
         * {
@@ -50,6 +42,8 @@
             color: var(--text-color);
             padding-bottom: 90px;
             padding-top: env(safe-area-inset-top);
+            background-image: radial-gradient(#F7D794 0.75px, transparent 0.75px);
+            background-size: 16px 16px;
         }
 
         .header {
@@ -57,43 +51,50 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: var(--card-bg);
-            border-bottom: 0.5px solid var(--border-color);
+            background: #FFEAA7;
+            border-bottom: 2px solid var(--border-color);
             position: sticky;
             top: 0;
             z-index: 100;
+            box-shadow: 0 2px 8px rgba(255, 159, 67, 0.15);
         }
 
-        .header h1 { font-size: 20px; font-weight: 600; }
-        .logout-btn { color: var(--danger); font-size: 14px; border: none; background: none; cursor: pointer; }
+        .header h1 { font-size: 20px; font-weight: 700; color: #574B90; display: flex; align-items: center; gap: 6px; }
+        .logout-btn { color: var(--danger); font-size: 14px; border: none; background: none; cursor: pointer; font-weight: bold; }
 
         .container { padding: 16px; }
 
         .card {
             background: var(--card-bg);
-            border-radius: 12px;
-            padding: 16px;
+            border-radius: 16px;
+            padding: 18px;
             margin-bottom: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 2px solid #F7D794;
+            box-shadow: 0 4px 12px rgba(247, 215, 148, 0.25);
+            position: relative;
         }
 
-        .card h2 { font-size: 16px; margin-bottom: 12px; color: var(--secondary-text); font-weight: 500; }
-        .card h3 { font-size: 14px; margin: 12px 0 8px 0; color: var(--primary); font-weight: 600; }
+        .card h2 { font-size: 16px; margin-bottom: 12px; color: var(--accent-corgi); font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .card h3 { font-size: 14px; margin: 12px 0 8px 0; color: #574B90; font-weight: 600; }
 
         .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; font-size: 13px; color: var(--secondary-text); margin-bottom: 4px; }
+        .form-group label { display: block; font-size: 13px; color: var(--secondary-text); margin-bottom: 4px; font-weight: 500; }
         
         input, select {
             width: 100%;
             padding: 10px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-color);
+            border-radius: 10px;
+            border: 1.5px solid #F7D794;
+            background: #FFFDF7;
             color: var(--text-color);
             font-size: 16px;
+            outline: none;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--primary);
         }
 
-        /* 優化 iOS 日曆選取器樣式 */
         input[type="date"] {
             position: relative;
             min-height: 44px;
@@ -105,49 +106,52 @@
             background: var(--primary);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
+            box-shadow: 0 3px 6px rgba(255, 159, 67, 0.3);
         }
 
         .btn-small {
             padding: 6px 12px;
             font-size: 12px;
-            border-radius: 6px;
+            border-radius: 8px;
             border: none;
             background: var(--primary);
             color: white;
             cursor: pointer;
+            font-weight: 600;
         }
 
         .btn-voice {
-            background: var(--warning);
+            background: #F78FB3;
             color: white;
             border: none;
             padding: 8px 12px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 13px;
             display: flex;
             align-items: center;
             gap: 4px;
             margin-bottom: 12px;
             cursor: pointer;
+            font-weight: 600;
         }
 
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; }
-        .stat-box { padding: 8px; background: var(--bg-color); border-radius: 8px; }
-        .stat-box .title { font-size: 11px; color: var(--secondary-text); }
-        .stat-box .num { font-size: 14px; font-weight: 600; margin-top: 4px; }
+        .stat-box { padding: 8px; background: #FFEAA7; border-radius: 10px; border: 1px solid #F7D794; }
+        .stat-box .title { font-size: 11px; color: #574B90; font-weight: 600; }
+        .stat-box .num { font-size: 14px; font-weight: 700; margin-top: 4px; color: var(--accent-corgi); }
 
         .nav-bar {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            height: 65px;
-            background: var(--card-bg);
-            border-top: 0.5px solid var(--border-color);
+            height: 68px;
+            background: #FFEAA7;
+            border-top: 2px solid var(--border-color);
             display: flex;
             justify-content: space-around;
             padding-bottom: env(safe-area-inset-bottom);
@@ -164,9 +168,10 @@
             border: none;
             background: none;
             width: 20%;
+            font-weight: bold;
         }
 
-        .nav-item.active { color: var(--primary); }
+        .nav-item.active { color: var(--accent-corgi); }
         .nav-item svg { width: 22px; height: 22px; fill: currentColor; margin-bottom: 2px; }
 
         .tab-content { display: none; }
@@ -177,16 +182,17 @@
             justify-content: space-between;
             align-items: center;
             padding: 12px 0;
-            border-bottom: 0.5px solid var(--border-color);
+            border-bottom: 1px dashed var(--border-color);
         }
         .list-item:last-child { border-bottom: none; }
 
         .badge {
             font-size: 11px;
             padding: 2px 6px;
-            border-radius: 4px;
-            background: var(--border-color);
-            color: var(--secondary-text);
+            border-radius: 6px;
+            background: #FFEAA7;
+            color: #574B90;
+            font-weight: 600;
         }
 
         .login-overlay {
@@ -198,6 +204,8 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            background-image: radial-gradient(#F7D794 0.75px, transparent 0.75px);
+            background-size: 16px 16px;
         }
 
         .bank-item {
@@ -226,7 +234,7 @@
             border-bottom: 0.5px dashed var(--border-color);
         }
         .rank-item:last-child { border-bottom: none; }
-        .rank-num { font-weight: bold; width: 24px; color: var(--primary); }
+        .rank-num { font-weight: bold; width: 24px; color: var(--accent-corgi); }
 
         .log-item {
             font-size: 12px;
@@ -241,40 +249,77 @@
             accent-color: var(--primary);
             cursor: pointer;
         }
+
+        .validation-tag {
+            font-size: 11px;
+            margin-left: 6px;
+            font-weight: bold;
+        }
+        .valid-match { color: var(--success); }
+        .valid-mismatch { color: var(--danger); }
+
+        /* 柯基卡通飾條與圖標 */
+        .corgi-avatar {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 10px auto;
+            display: block;
+            border-radius: 50%;
+            border: 3px solid var(--primary);
+            background: #FFEAA7;
+        }
+
+        .corgi-float-btn {
+            position: fixed;
+            right: 12px;
+            bottom: 75px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: #FFEAA7;
+            border: 2px solid var(--primary);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99;
+            font-size: 24px;
+        }
     </style>
 </head>
 <body>
 
     <!-- 登入畫面 -->
     <div id="loginView" class="login-overlay">
-        <div class="card" style="width: 100%; max-width: 320px;">
-            <h1 style="text-align: center; margin-bottom: 20px;">財務管理助手 Pro</h1>
-            <div class="form-group">
+        <div class="card" style="width: 100%; max-width: 320px; text-align: center;">
+            <img src="https://img.icons8.com/color/96/corgi.png" class="corgi-avatar" alt="Corgi">
+            <h1 style="font-size: 20px; color: var(--accent-corgi); margin-bottom: 16px;">財務管理助手 Pro</h1>
+            <div class="form-group" style="text-align: left;">
                 <label>選擇身分</label>
                 <select id="loginSelect">
                     <option value="admin">管理者 (Admin)</option>
                 </select>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="text-align: left;">
                 <label>密碼</label>
                 <input type="password" id="loginPassword" placeholder="請輸入密碼">
             </div>
-            <button class="btn-primary" onclick="login()">登入</button>
+            <button class="btn-primary" onclick="login()">登入助手</button>
         </div>
     </div>
 
     <!-- 主要內容 -->
     <div id="appView" style="display: none;">
         <div class="header">
-            <h1 id="currentUserTitle">財務助手</h1>
-            <button class="logout-btn" onclick="logout()">登出 / 切換</button>
+            <h1 id="currentUserTitle"><img src="https://img.icons8.com/color/48/corgi.png" style="width:28px; height:28px;"> 財務助手</h1>
+            <button class="logout-btn" onclick="logout()">登出 / 切換 🐾</button>
         </div>
 
         <div class="container">
             <!-- 管理者視圖 -->
             <div id="adminSection" class="tab-content">
                 <div class="card">
-                    <h2>新增用戶 (最多 2 位)</h2>
+                    <h2>🐶 新增用戶 (最多 2 位)</h2>
                     <div class="form-group">
                         <label>用戶名稱</label>
                         <input type="text" id="newUserName" placeholder="請輸入名字">
@@ -286,15 +331,15 @@
                     <button class="btn-primary" onclick="addUser()">新增用戶</button>
                 </div>
                 <div class="card">
-                    <h2>目前用戶列表</h2>
+                    <h2>🐾 目前用戶列表</h2>
                     <div id="userList"></div>
                 </div>
                 <div class="card">
-                    <h2>已停用/待復原帳號資料 (7天內可復原)</h2>
+                    <h2>🦴 已停用/待復原帳號資料 (7天內可復原)</h2>
                     <div id="deletedUserList"></div>
                 </div>
                 <div class="card">
-                    <h2>用戶消費記帳修改/刪除日誌 (保留6個月)</h2>
+                    <h2>📋 用戶消費記帳修改/刪除日誌 (保留6個月)</h2>
                     <div id="auditLogList"></div>
                 </div>
             </div>
@@ -304,7 +349,7 @@
                 <!-- 1. 預算分配 -->
                 <div id="tabBudget" class="tab-content">
                     <div class="card">
-                        <h2>1. 收入設定 (631儲蓄法)</h2>
+                        <h2>🐶 1. 收入設定 (631儲蓄法)</h2>
                         <button id="voiceBudgetBtn" class="btn-voice" onclick="toggleBudgetVoiceRecognition()">
                             🎤 語音輸入收入 (例如: "安麗收入 5000 元")
                         </button>
@@ -320,7 +365,7 @@
 
                         <div class="form-group"><label>中獎發票</label><input type="number" id="incLottery" value="0" oninput="calcIncome()"></div>
                         
-                        <div style="margin-top:12px; font-weight:bold;">總收入：$<span id="totalIncome">0</span></div>
+                        <div style="margin-top:12px; font-weight:bold; color:var(--accent-corgi); font-size:16px;">總收入：$<span id="totalIncome">0</span></div>
                         
                         <div class="grid-3" style="margin-top: 10px;">
                             <div class="stat-box"><div class="title">生活必須(60%)</div><div class="num" id="bNeeds">$0</div></div>
@@ -330,35 +375,37 @@
                     </div>
 
                     <div class="card">
-                        <h2>2. 自定義消費額度調整 (三大區塊)</h2>
-                        <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 8px;">系統已自動載入您在「用戶設定」中預設的細項目與額度</p>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                            <h2 style="margin:0;">🐾 2. 自定義消費額度調整</h2>
+                            <button class="btn-small" style="background:var(--secondary-text);" onclick="resetBudgetToTemplate()">↺ 載入個人設定檔</button>
+                        </div>
+                        <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 8px;">提示：各區塊設定的額度加總，須與上方 631 原則分配的總額完全一致。</p>
                         
-                        <h3>生活必須 (60%)</h3>
+                        <h3>生活必須 (60%) <span id="valTagNeeds" class="validation-tag"></span></h3>
                         <div id="catNeeds"></div>
                         <button class="btn-small" onclick="addCategoryPrompt('needs')">+ 新增生活必須項目</button>
 
-                        <h3>投資理財 (30%)</h3>
+                        <h3>投資理財 (30%) <span id="valTagInvest" class="validation-tag"></span></h3>
                         <div id="catInvest"></div>
                         <button class="btn-small" onclick="addCategoryPrompt('invest')">+ 新增投資理財項目</button>
 
-                        <h3>緊急儲備 (10%)</h3>
+                        <h3>緊急儲備 (10%) <span id="valTagEmergency" class="validation-tag"></span></h3>
                         <div id="catEmergency"></div>
                         <button class="btn-small" onclick="addCategoryPrompt('emergency')">+ 新增緊急儲備項目</button>
 
-                        <button class="btn-primary" style="margin-top: 20px;" onclick="saveBudget()">儲存本月預算配置</button>
+                        <button class="btn-primary" style="margin-top: 20px;" onclick="saveBudget()">儲存本月預算配置 🐾</button>
                     </div>
                 </div>
 
                 <!-- 2. 消費記帳 -->
                 <div id="tabRecord" class="tab-content">
                     <div class="card">
-                        <h2 id="expenseFormTitle">記錄消費</h2>
+                        <h2 id="expenseFormTitle">🦴 記錄消費</h2>
                         <button id="voiceBtn" class="btn-voice" onclick="toggleVoiceRecognition()">
                             🎤 語音輸入 (例如: "今天花費 150 元吃午餐")
                         </button>
                         <input type="hidden" id="editingExpenseId" value="">
                         
-                        <!-- 1-1 日曆選取器優化 -->
                         <div class="form-group">
                             <label>消費日期 📅 (點擊開啟日曆選擇)</label>
                             <input type="date" id="expDate">
@@ -376,11 +423,10 @@
                             <label>消費類別</label>
                             <select id="expCategory"></select>
                         </div>
-                        <button class="btn-primary" id="saveExpenseBtn" onclick="addExpense()">新增記帳</button>
+                        <button class="btn-primary" id="saveExpenseBtn" onclick="addExpense()">新增記帳 🐾</button>
                         <button class="btn-small" id="cancelEditBtn" style="background:var(--secondary-text); width:100%; margin-top:8px; display:none;" onclick="resetExpenseForm()">取消修改</button>
                     </div>
 
-                    <!-- 本月細項消費排名 -->
                     <div class="card">
                         <h2>🏆 本月三大區塊具體消費項目排行榜</h2>
                         <p style="font-size:11px; color:var(--secondary-text); margin-bottom:8px;">根據具體「用途描述」進行獨立排行統計</p>
@@ -388,35 +434,33 @@
                     </div>
 
                     <div class="card">
-                        <h2>近期紀錄</h2>
+                        <h2>🐾 近期紀錄</h2>
                         <div id="expenseHistory"></div>
                     </div>
                 </div>
 
                 <!-- 3. 餘額統計與歷史圖表 -->
                 <div id="tabStats" class="tab-content">
-                    <!-- 月份切換器 -->
                     <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
                         <h2 style="margin:0;">檢視月份：</h2>
                         <select id="statsMonthSelect" style="width: auto; padding: 6px 12px;" onchange="renderStats()">
-                            <!-- 動態載入可選月份 -->
                         </select>
                     </div>
 
                     <div class="card">
-                        <h2>三大區塊與總餘額佔比</h2>
+                        <h2>🐾 三大區塊與總餘額佔比</h2>
                         <div style="position: relative; height:240px; width:100%;">
                             <canvas id="balancePieChart"></canvas>
                         </div>
                     </div>
 
                     <div class="card">
-                        <h2>當月預算與餘額統計 (三大區塊)</h2>
+                        <h2>🦴 當月預算與餘額統計 (三大區塊)</h2>
                         <div id="statSummary"></div>
                     </div>
                 </div>
 
-                <!-- 2-1 新增：獨立「歷史月資料庫」管理專區 -->
+                <!-- 4. 歷史月資料庫管理專區 -->
                 <div id="tabHistoryDB" class="tab-content">
                     <div class="card">
                         <h2>📅 歷年月份資料庫管理</h2>
@@ -427,31 +471,32 @@
                             <button class="btn-small" style="background:var(--secondary-text);" onclick="selectAllMonths(false)">取消全選</button>
                         </div>
 
-                        <div id="monthlyDatabaseList">
-                            <!-- 動態載入月資料項目 -->
-                        </div>
+                        <div id="monthlyDatabaseList"></div>
 
                         <div style="margin-top: 16px; display: flex; gap: 10px;">
-                            <button class="btn-primary" style="background: var(--success);" onclick="exportSelectedMonthsCSV()">📥 匯出勾選月份 (CSV含圓餅圖數據)</button>
+                            <button class="btn-primary" style="background: var(--success);" onclick="exportSelectedMonthsCSV()">📥 匯出勾選月份 (CSV含圖表數據)</button>
                             <button class="btn-primary" style="background: var(--danger);" onclick="deleteSelectedMonths()">🗑️ 刪除勾選月份</button>
                         </div>
                     </div>
 
-                    <!-- 2-3 刪除保留期復原專區 -->
                     <div class="card">
                         <h2>🛡️ 刪除緩衝備份區 (3天保留期)</h2>
                         <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 8px;">刪除的月資料會在此保存 72 小時，超過時間將由系統自動永久清除。</p>
-                        <div id="softDeletedMonthsList">
-                            <!-- 動態載入暫存刪除的月份 -->
-                        </div>
+                        <div id="softDeletedMonthsList"></div>
                     </div>
                 </div>
 
-                <!-- 5. 用戶設定 (設定預設三大區塊細項) -->
+                <!-- 5. 用戶設定 (設定個人設定檔與範本匯入匯出) -->
                 <div id="tabSettings" class="tab-content">
                     <div class="card">
-                        <h2>個人預設細項與範本設定</h2>
-                        <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 12px;">在此處設定的細項與預設額度，會在您每次開啟預算分配時自動帶入。</p>
+                        <h2>⚙️ 個人預設設定檔 & 範本管理</h2>
+                        <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 12px;">在此處設定的細項與預設額度，為您的專屬設定檔。您可以隨時套用至新月份，或導出/導入給其他用戶使用。</p>
+
+                        <div style="display:flex; gap:8px; margin-bottom:16px;">
+                            <button class="btn-small" style="background:var(--success);" onclick="exportUserSettingsTemplate()">📤 導出 JSON</button>
+                            <button class="btn-small" style="background:var(--primary);" onclick="document.getElementById('importTemplateInput').click()">📥 導入 JSON</button>
+                            <input type="file" id="importTemplateInput" style="display:none;" accept=".json" onchange="importUserSettingsTemplate(event)">
+                        </div>
 
                         <h3>生活必須 (60%) 預設細項</h3>
                         <div id="settingCatNeeds"></div>
@@ -465,11 +510,14 @@
                         <div id="settingCatEmergency"></div>
                         <button class="btn-small" onclick="addSettingCategoryPrompt('emergency')">+ 新增預設項目</button>
 
-                        <button class="btn-primary" style="margin-top: 20px;" onclick="saveUserSettings()">儲存預設設定</button>
+                        <button class="btn-primary" style="margin-top: 20px;" onclick="saveUserSettings()">儲存個人預設設定檔 🐾</button>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- 懸浮柯基陪伴按鈕 -->
+        <div class="corgi-float-btn" onclick="alert('柯基助手提醒您：記得每天記帳，邁向財務自由喔！🐾')">🐶</div>
 
         <!-- 底部導覽列 -->
         <nav class="nav-bar" id="userNav">
@@ -506,7 +554,7 @@
             userTemplates: {}, 
             expenses: [],
             auditLogs: [],
-            deletedMonths: [] // 2-3 月份數據刪除暫存區 (3天保留期)
+            deletedMonths: []
         };
 
         let currentUser = null;
@@ -522,7 +570,7 @@
         function init() {
             cleanupOldDeletedUsers();
             cleanupOldAuditLogs();
-            cleanupOldDeletedMonths(); // 2-3 自動清理超過3天的已刪除月份
+            cleanupOldDeletedMonths();
             updateLoginDropdown();
             document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
         }
@@ -542,7 +590,6 @@
             saveState();
         }
 
-        // 2-3 檢查並清理超過 3 天 (72小時) 的刪除月份資料
         function cleanupOldDeletedMonths() {
             if (!state.deletedMonths) state.deletedMonths = [];
             const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
@@ -602,7 +649,7 @@
             }
             document.getElementById('loginView').style.display = 'none';
             document.getElementById('appView').style.display = 'block';
-            document.getElementById('currentUserTitle').innerText = currentUser.name;
+            document.getElementById('currentUserTitle').innerHTML = `<img src="https://img.icons8.com/color/48/corgi.png" style="width:28px; height:28px;"> ${currentUser.name} 的助手`;
             document.getElementById('loginPassword').value = '';
         }
 
@@ -660,11 +707,11 @@
                     if (log.action === '刪除') {
                         detail = `刪除舊紀錄：${log.oldData.date} | ${log.oldData.note} | $${log.oldData.amount}`;
                     } else {
-                        detail = `修改前的內容：${log.oldData.date} | ${log.oldData.note} | $${log.oldData.amount}<br>修改後的內容：${log.newData.date} | ${log.newData.note} | $${log.newData.amount}`;
+                        detail = `修改前：${log.oldData.date} | ${log.oldData.note} | $${log.oldData.amount}<br>修改後：${log.newData.date} | ${log.newData.note} | $${log.newData.amount}`;
                     }
                     auditList.innerHTML += `
                         <div class="log-item">
-                            <strong style="color:var(--text-color);">${log.userName}</strong> 於 ${timeStr} <span style="color:${log.action === '刪除' ? 'var(--danger)' : 'var(--warning)'}; font-weight:bold;">[${log.action}]</span><br>
+                            <strong style="color:var(--text-color);">${log.userName}</strong> 於 ${timeStr} <span style="color:${log.action === '刪除' ? 'var(--danger)' : 'var(--primary)'}; font-weight:bold;">[${log.action}]</span><br>
                             ${detail}
                         </div>
                     `;
@@ -837,6 +884,15 @@
             calcIncome();
         }
 
+        function resetBudgetToTemplate() {
+            if (confirm('確定要載入您的個人預設設定檔嗎？這將會覆蓋當前編輯中的類別額度。')) {
+                const userTpl = (state.userTemplates && state.userTemplates[currentUser.id]) ? state.userTemplates[currentUser.id] : { needs: {}, invest: {}, emergency: {} };
+                state.budgets[currentUser.id].categories = JSON.parse(JSON.stringify(userTpl));
+                saveState();
+                loadUserBudget();
+            }
+        }
+
         function addBankInput() {
             const bankContainer = document.getElementById('bankList');
             const div = document.createElement('div');
@@ -861,10 +917,11 @@
                 container.innerHTML += `
                     <div class="form-group" style="display:flex; gap:8px; align-items:center;">
                         <label style="width:110px; margin:0;">${cat}</label>
-                        <input type="number" class="cat-input" data-cat="${cat}" value="${catObj[cat]}">
+                        <input type="number" class="cat-input" data-cat="${cat}" value="${catObj[cat]}" oninput="validateBudgetTotals()">
                     </div>
                 `;
             }
+            validateBudgetTotals();
         }
 
         function calcIncome() {
@@ -883,6 +940,48 @@
             document.getElementById('bNeeds').innerText = '$' + Math.round(total * 0.6);
             document.getElementById('bInvest').innerText = '$' + Math.round(total * 0.3);
             document.getElementById('bEmergency').innerText = '$' + Math.round(total * 0.1);
+
+            validateBudgetTotals();
+        }
+
+        // 1-1 額度總額與預算總合動態驗證 (更新：精確顯示相差金額)
+        function validateBudgetTotals() {
+            const totalIncome = Number(document.getElementById('totalIncome').innerText) || 0;
+            const targetNeeds = Math.round(totalIncome * 0.6);
+            const targetInvest = Math.round(totalIncome * 0.3);
+            const targetEmergency = Math.round(totalIncome * 0.1);
+
+            const getSum = (containerId) => {
+                let sum = 0;
+                document.querySelectorAll(`#${containerId} .cat-input`).forEach(input => {
+                    sum += Number(input.value) || 0;
+                });
+                return sum;
+            };
+
+            const sumNeeds = getSum('catNeeds');
+            const sumInvest = getSum('catInvest');
+            const sumEmergency = getSum('catEmergency');
+
+            const updateTag = (tagId, current, target) => {
+                const el = document.getElementById(tagId);
+                if (!el) return;
+                const diff = target - current;
+                if (current === target) {
+                    el.className = "validation-tag valid-match";
+                    el.innerText = `✓ 細項符合 ($${current})`;
+                } else if (diff > 0) {
+                    el.className = "validation-tag valid-mismatch";
+                    el.innerText = `✕ 細項加總 $${current} (還差 $${diff})`;
+                } else {
+                    el.className = "validation-tag valid-mismatch";
+                    el.innerText = `✕ 細項加總 $${current} (超出 $${Math.abs(diff)})`;
+                }
+            };
+
+            updateTag('valTagNeeds', sumNeeds, targetNeeds);
+            updateTag('valTagInvest', sumInvest, targetInvest);
+            updateTag('valTagEmergency', sumEmergency, targetEmergency);
         }
 
         function addCategoryPrompt(type) {
@@ -922,14 +1021,30 @@
             fetchCatVals('catInvest', 'invest');
             fetchCatVals('catEmergency', 'emergency');
 
+            let bankTotal = banks.reduce((sum, b) => sum + b.amount, 0);
+            const totalInc = s + a + l + bankTotal;
+            const targetNeeds = Math.round(totalInc * 0.6);
+            const targetInvest = Math.round(totalInc * 0.3);
+            const targetEmergency = Math.round(totalInc * 0.1);
+
+            const sumNeeds = Object.values(categories.needs).reduce((a, b) => a + b, 0);
+            const sumInvest = Object.values(categories.invest).reduce((a, b) => a + b, 0);
+            const sumEmergency = Object.values(categories.emergency).reduce((a, b) => a + b, 0);
+
+            if (sumNeeds !== targetNeeds || sumInvest !== targetInvest || sumEmergency !== targetEmergency) {
+                const proceed = confirm(`⚠️ 注意：您的自定義金額加總與 631 額度不相符！\n\n- 生活必須: 目前 $${sumNeeds} / 目標 $${targetNeeds} (差額: $${targetNeeds - sumNeeds})\n- 投資理財: 目前 $${sumInvest} / 目標 $${targetInvest} (差額: $${targetInvest - sumInvest})\n- 緊急儲備: 目前 $${sumEmergency} / 目標 $${targetEmergency} (差額: $${targetEmergency - sumEmergency})\n\n是否仍要強制儲存？`);
+                if (!proceed) return;
+            }
+
             state.budgets[currentUser.id] = {
                 income: { salary: s, amway: a, banks, lottery: l },
                 categories
             };
             saveState();
-            alert('本月預算配置儲存成功！');
+            alert('本月預算配置儲存成功！🐾');
         }
 
+        // 2-1 用戶設定檔 Load/Save & JSON 匯入匯出
         function loadUserSettings() {
             if (!state.userTemplates) state.userTemplates = {};
             const tpl = state.userTemplates[currentUser.id] || { needs: {}, invest: {}, emergency: {} };
@@ -989,12 +1104,45 @@
 
             state.userTemplates[currentUser.id] = newTpl;
             
-            if (confirm('設定已儲存！是否立即將這些預設細項與金額帶入到「本月預算分配」中？')) {
+            if (confirm('個人設定檔已儲存！是否立即將這些預設細項與金額帶入到「本月預算分配」中？')) {
                 state.budgets[currentUser.id].categories = JSON.parse(JSON.stringify(newTpl));
             }
 
             saveState();
-            alert('用戶預設細項更新完畢！');
+            alert('個人預設設定檔更新完畢！🐾');
+        }
+
+        function exportUserSettingsTemplate() {
+            const tpl = state.userTemplates[currentUser.id] || { needs: {}, invest: {}, emergency: {} };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tpl, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `budget_template_${currentUser.name}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importUserSettingsTemplate(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const importedTpl = JSON.parse(e.target.result);
+                    if (importedTpl.needs && importedTpl.invest && importedTpl.emergency) {
+                        state.userTemplates[currentUser.id] = importedTpl;
+                        saveState();
+                        loadUserSettings();
+                        alert('個人設定檔 JSON 匯入成功！🐾');
+                    } else {
+                        alert('設定檔格式不正確，需包含 needs, invest, emergency 三大區塊。');
+                    }
+                } catch (err) {
+                    alert('無法讀取 JSON 檔案，請確認檔案格式。');
+                }
+            };
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0]);
+            }
         }
 
         function updateCategoryDropdown() {
@@ -1073,8 +1221,8 @@
             document.getElementById('expAmount').value = '';
             document.getElementById('expNote').value = '';
             document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
-            document.getElementById('expenseFormTitle').innerText = '記錄消費';
-            document.getElementById('saveExpenseBtn').innerText = '新增記帳';
+            document.getElementById('expenseFormTitle').innerText = '🦴 記錄消費';
+            document.getElementById('saveExpenseBtn').innerText = '新增記帳 🐾';
             document.getElementById('cancelEditBtn').style.display = 'none';
         }
 
@@ -1090,8 +1238,8 @@
             updateCategoryDropdown();
             document.getElementById('expCategory').value = `${target.section}:${target.category}`;
 
-            document.getElementById('expenseFormTitle').innerText = '修改消費紀錄';
-            document.getElementById('saveExpenseBtn').innerText = '儲存修改';
+            document.getElementById('expenseFormTitle').innerText = '✏️ 修改消費紀錄';
+            document.getElementById('saveExpenseBtn').innerText = '儲存修改 🐾';
             document.getElementById('cancelEditBtn').style.display = 'block';
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1117,7 +1265,7 @@
             const userExp = state.expenses.filter(e => e.userId === currentUser.id);
 
             if (userExp.length === 0) {
-                container.innerHTML = '<div style="color:var(--secondary-text); text-align:center;">尚無消費紀錄</div>';
+                container.innerHTML = '<div style="color:var(--secondary-text); text-align:center;">尚無消費紀錄 🐾</div>';
                 return;
             }
 
@@ -1260,10 +1408,10 @@
                     datasets: [{
                         data: [needs, invest, emergency, balance],
                         backgroundColor: [
-                            '#FF9500',
-                            '#007AFF',
-                            '#FF3B30',
-                            '#34C759' 
+                            '#FF9F43',
+                            '#54A0FF',
+                            '#FF6B6B',
+                            '#10AC84' 
                         ]
                     }]
                 },
@@ -1282,10 +1430,6 @@
                 }
             });
         }
-
-        // ==========================================
-        // 2-1 & 2-2 & 2-3 月資料庫管理、圓餅圖匯出與3天復原機制
-        // ==========================================
 
         function getMonthSummaryData(monthStr) {
             const incomeObj = state.budgets[currentUser.id]?.income || { salary: 0, amway: 0, banks: [], lottery: 0 };
@@ -1328,7 +1472,7 @@
             const sortedMonths = Array.from(monthsSet).sort().reverse();
 
             if (sortedMonths.length === 0) {
-                listContainer.innerHTML = '<div style="color:var(--secondary-text); text-align:center;">尚無月資料紀錄</div>';
+                listContainer.innerHTML = '<div style="color:var(--secondary-text); text-align:center;">尚無月資料紀錄 🐾</div>';
             } else {
                 sortedMonths.forEach(m => {
                     const data = getMonthSummaryData(m);
@@ -1348,7 +1492,6 @@
                 });
             }
 
-            // 渲染 3 天復原區
             renderSoftDeletedMonths();
         }
 
@@ -1356,7 +1499,6 @@
             document.querySelectorAll('.month-chk').forEach(chk => chk.checked = select);
         }
 
-        // 2-2 CSV 匯出功能（包含圓餅圖四大區塊佔比與明細）
         function exportSelectedMonthsCSV() {
             const selectedCheckboxes = document.querySelectorAll('.month-chk:checked');
             if (selectedCheckboxes.length === 0) {
@@ -1366,11 +1508,11 @@
 
             const selectedMonths = Array.from(selectedCheckboxes).map(cb => cb.value);
 
-            let csvContent = "\uFEFF"; // UTF-8 BOM 避免 Excel 亂碼
+            let csvContent = "\uFEFF";
 
             selectedMonths.forEach(m => {
                 const data = getMonthSummaryData(m);
-                const grandTotal = data.income > 0 ? data.income : 1; // 避免除以 0
+                const grandTotal = data.income > 0 ? data.income : 1;
 
                 const pNeeds = ((data.needs / grandTotal) * 100).toFixed(1);
                 const pInvest = ((data.invest / grandTotal) * 100).toFixed(1);
@@ -1421,7 +1563,6 @@
             }, 500);
         }
 
-        // 2-3 刪除勾選月份 (放入 3 天暫存復原區)
         function deleteSelectedMonths() {
             const selectedCheckboxes = document.querySelectorAll('.month-chk:checked');
             if (selectedCheckboxes.length === 0) {
@@ -1451,7 +1592,6 @@
                         deletedAt: Date.now()
                     });
 
-                    // 從主要消費陣列中移除
                     state.expenses = state.expenses.filter(e => !(e.userId === currentUser.id && e.date.startsWith(m)));
                 }
             });
@@ -1462,10 +1602,9 @@
             populateMonthDropdown();
             renderStats();
             renderHistoryDatabase();
-            alert('已將資料移至「3天緩衝備份區」！');
+            alert('已將資料移至「3天緩衝備份區」！🐾');
         }
 
-        // 2-3 渲染刪除緩衝區清單
         function renderSoftDeletedMonths() {
             const container = document.getElementById('softDeletedMonthsList');
             container.innerHTML = '';
@@ -1491,7 +1630,6 @@
             });
         }
 
-        // 2-3 復原被刪除的月份
         function restoreDeletedMonth(delId) {
             const idx = state.deletedMonths.findIndex(dm => dm.id === delId);
             if (idx > -1) {
@@ -1505,11 +1643,10 @@
                 populateMonthDropdown();
                 renderStats();
                 renderHistoryDatabase();
-                alert(`已成功復原 ${restoredObj.month} 的所有記帳資料！`);
+                alert(`已成功復原 ${restoredObj.month} 的所有記帳資料！🐾`);
             }
         }
 
-        // 語音辨識：分配預算
         function toggleBudgetVoiceRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -1564,10 +1701,9 @@
             }
 
             calcIncome();
-            alert(`預算語音辨識完成！\n識別內容："${text}"\n已自動更新對應金額。`);
+            alert(`預算語音辨識完成！\n識別內容："${text}"\n已自動更新對應金額。🐾`);
         }
 
-        // 語音辨識：消費記帳
         function toggleVoiceRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -1617,7 +1753,7 @@
                 document.getElementById('expNote').value = note;
             }
 
-            alert(`語音解析完成！\n識別內容："${text}"\n已自動填入金額與描述，請確認類別與日期後點擊新增。`);
+            alert(`語音解析完成！\n識別內容："${text}"\n已自動填入金額與描述，請確認類別與日期後點擊新增。🐾`);
         }
 
         init();
