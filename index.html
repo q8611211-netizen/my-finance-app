@@ -1,7 +1,433 @@
-let secCats = categories[sec] || {};
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<title>個人財務助手 Pro</title>
+
+	<!-- iOS PWA 必備標籤 -->
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="財務助手">
+	<link rel="apple-touch-icon" href="https://img.icons8.com/isometric/512/wallet.png">
+
+	<style>
+		:root {
+			--bg-primary: #F2F2F7;
+			--card-bg: #FFFFFF;
+			--text-primary: #000000;
+			--secondary-text: #8E8E93;
+			--accent: #007AFF;
+			--danger: #FF3B30;
+			--success: #34C759;
+			--border: #C6C6C8;
+		}
+
+		@media (prefers-color-scheme: dark) {
+			:root {
+				--bg-primary: #000000;
+				--card-bg: #1C1C1E;
+				--text-primary: #FFFFFF;
+				--secondary-text: #8E8E93;
+				--accent: #0A84FF;
+				--danger: #FF453A;
+				--success: #30D158;
+				--border: #38383A;
+			}
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+			font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+			-webkit-tap-highlight-color: transparent;
+		}
+
+		body {
+			background-color: var(--bg-primary);
+			color: var(--text-primary);
+			padding-top: env(safe-area-inset-top);
+			padding-bottom: calc(env(safe-area-inset-bottom) + 70px);
+			min-height: 100vh;
+		}
+
+		/* Header */
+		.header {
+			padding: 16px 20px;
+			background: var(--bg-primary);
+			position: sticky;
+			top: 0;
+			z-index: 100;
+			backdrop-filter: blur(10px);
+		}
+
+		.header h1 {
+			font-size: 28px;
+			font-weight: 700;
+		}
+
+		/* Container & Cards */
+		.container {
+			padding: 0 16px;
+		}
+
+		.card {
+			background: var(--card-bg);
+			border-radius: 12px;
+			padding: 16px;
+			margin-bottom: 16px;
+			box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+		}
+
+		.card-title {
+			font-size: 14px;
+			color: var(--secondary-text);
+			margin-bottom: 8px;
+			text-transform: uppercase;
+		}
+
+		.amount-display {
+			font-size: 32px;
+			font-weight: 700;
+			color: var(--text-primary);
+		}
+
+		/* Form Inputs */
+		.form-group {
+			margin-bottom: 12px;
+		}
+
+		label {
+			display: block;
+			font-size: 13px;
+			color: var(--secondary-text);
+			margin-bottom: 4px;
+		}
+
+		input, select {
+			width: 100%;
+			padding: 12px;
+			border-radius: 8px;
+			border: 1px solid var(--border);
+			background: var(--card-bg);
+			color: var(--text-primary);
+			font-size: 16px;
+			outline: none;
+		}
+
+		/* Buttons */
+		.btn {
+			width: 100%;
+			padding: 14px;
+			border-radius: 10px;
+			border: none;
+			background: var(--accent);
+			color: white;
+			font-size: 16px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: opacity 0.2s;
+		}
+
+		.btn:active {
+			opacity: 0.7;
+		}
+
+		.btn-voice {
+			background: #5856D6;
+			margin-bottom: 12px;
+		}
+
+		.voice-recording {
+			animation: pulse 1.5s infinite;
+			background: var(--danger) !important;
+		}
+
+		@keyframes pulse {
+			0% { opacity: 1; }
+			50% { opacity: 0.6; }
+			100% { opacity: 1; }
+		}
+
+		/* List Items */
+		.list-item {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 12px 0;
+			border-bottom: 0.5px solid var(--border);
+		}
+
+		.list-item:last-child {
+			border-bottom: none;
+		}
+
+		/* Bottom Navigation Bar */
+		.tab-bar {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			height: calc(50px + env(safe-area-inset-bottom));
+			padding-bottom: env(safe-area-inset-bottom);
+			background: var(--card-bg);
+			border-top: 0.5px solid var(--border);
+			display: flex;
+			justify-content: space-around;
+			align-items: center;
+			z-index: 1000;
+		}
+
+		.tab-item {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			font-size: 10px;
+			color: var(--secondary-text);
+			text-decoration: none;
+			cursor: pointer;
+		}
+
+		.tab-item.active {
+			color: var(--accent);
+		}
+
+		.tab-icon {
+			font-size: 20px;
+			margin-bottom: 2px;
+		}
+
+		.page {
+			display: none;
+		}
+
+		.page.active {
+			display: block;
+		}
+	</style>
+</head>
+<body>
+
+	<div class="header">
+		<h1 id="pageTitle">記帳助手</h1>
+	</div>
+
+	<div class="container">
+		<!-- 頁面 1：記帳與消費清單 -->
+		<div id="page-record" class="page active">
+			<div class="card">
+				<div class="card-title">本月總消費</div>
+				<div class="amount-display" id="totalSpentDisplay">$0</div>
+			</div>
+
+			<div class="card">
+				<button id="voiceBtn" class="btn btn-voice" onclick="toggleVoiceRecognition()">🎤 語音輸入 (例如: "今天花費 150 元吃午餐")</button>
+
+				<form id="expForm" onsubmit="addExpense(event)">
+					<div class="form-group">
+						<label>區塊 / 類別</label>
+						<select id="expSectionCat" required></select>
+					</div>
+					<div class="form-group">
+						<label>金額</label>
+						<input type="number" id="expAmount" placeholder="請輸入金額" required min="1">
+					</div>
+					<div class="form-group">
+						<label>備註 / 用途</label>
+						<input type="text" id="expNote" placeholder="選填（例如：午餐、搭計程車）">
+					</div>
+					<button type="submit" class="btn">新增紀錄</button>
+				</form>
+			</div>
+
+			<div class="card">
+				<div class="card-title">近期消費紀錄</div>
+				<div id="expenseList"></div>
+			</div>
+		</div>
+
+		<!-- 頁面 2：預算規劃與控制 -->
+		<div id="page-budget" class="page">
+			<div class="card">
+				<div class="card-title">設定類別預算</div>
+				<form id="budgetForm" onsubmit="saveBudget(event)">
+					<div class="form-group">
+						<label>選擇區塊</label>
+						<select id="bgSection" required onchange="updateCategoryOptions()">
+							<option value="需要">需要 (Needs)</option>
+							<option value="想要">想要 (Wants)</option>
+							<option value="儲蓄">儲蓄 (Savings)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label>類別名稱</label>
+						<input type="text" id="bgCategory" placeholder="例如: 飲食、娛樂、房租" required>
+					</div>
+					<div class="form-group">
+						<label>預算金額</label>
+						<input type="number" id="bgAmount" placeholder="請輸入預算上限" required min="0">
+					</div>
+					<button type="submit" class="btn">儲存預算設定</button>
+				</form>
+			</div>
+
+			<div class="card">
+				<div class="card-title">預算執行狀況</div>
+				<div id="budgetStatusList"></div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 底部導覽列 -->
+	<div class="tab-bar">
+		<div class="tab-item active" onclick="switchTab('record', '記帳助手', this)">
+			<span class="tab-icon">📝</span>
+			<span>記帳</span>
+		</div>
+		<div class="tab-item" onclick="switchTab('budget', '預算管理', this)">
+			<span class="tab-icon">📊</span>
+			<span>預算</span>
+		</div>
+	</div>
+
+	<script>
+		let categories = JSON.parse(localStorage.getItem('my_budgets')) || {
+			'需要': { '餐飲': 9000, '交通': 2000 },
+			'想要': { '娛樂': 3000 },
+			'儲蓄': { '緊急預備金': 5000 }
+		};
+
+		let userExp = JSON.parse(localStorage.getItem('my_expenses')) || [];
+		let isRecording = false;
+		let recognition = null;
+
+		function init() {
+			renderCategorySelect();
+			renderExpenses();
+			renderBudgetStatus();
+		}
+
+		// 切換 Tab 頁面
+		function switchTab(pageId, title, tabEl) {
+			document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+			document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+			
+			document.getElementById('page-' + pageId).classList.add('active');
+			document.getElementById('pageTitle').innerText = title;
+			tabEl.classList.add('active');
+
+			if(pageId === 'budget') renderBudgetStatus();
+		}
+
+		// 更新記帳選單中的分類
+		function renderCategorySelect() {
+			const select = document.getElementById('expSectionCat');
+			select.innerHTML = '';
+			for (let sec in categories) {
+				for (let cat in categories[sec]) {
+					let opt = document.createElement('option');
+					opt.value = `${sec}|${cat}`;
+					opt.innerText = `[${sec}] ${cat}`;
+					select.appendChild(opt);
+				}
+			}
+		}
+
+		// 新增消費
+		function addExpense(e) {
+			e.preventDefault();
+			const secCat = document.getElementById('expSectionCat').value.split('|');
+			const amount = parseFloat(document.getElementById('expAmount').value);
+			const note = document.getElementById('expNote').value || '未分類支出';
+
+			const newExp = {
+				id: Date.now(),
+				section: secCat[0],
+				category: secCat[1],
+				amount: amount,
+				note: note,
+				date: new Date().toLocaleDateString('zh-TW')
+			};
+
+			userExp.unshift(newExp);
+			localStorage.setItem('my_expenses', JSON.stringify(userExp));
+
+			document.getElementById('expAmount').value = '';
+			document.getElementById('expNote').value = '';
+
+			renderExpenses();
+		}
+
+		// 刪除消費紀錄
+		function deleteExpense(id) {
+			userExp = userExp.filter(item => item.id !== id);
+			localStorage.setItem('my_expenses', JSON.stringify(userExp));
+			renderExpenses();
+		}
+
+		// 渲染消費列表與計算總花費
+		function renderExpenses() {
+			const list = document.getElementById('expenseList');
+			const totalDisplay = document.getElementById('totalSpentDisplay');
+			list.innerHTML = '';
+
+			let total = 0;
+			if (userExp.length === 0) {
+				list.innerHTML = `<div style="font-size:14px; color:var(--secondary-text); text-align:center; padding: 12px 0;">尚無消費紀錄</div>`;
+			}
+
+			userExp.forEach(item => {
+				total += item.amount;
+				list.innerHTML += `
+					<div class="list-item">
+						<div>
+							<strong>${item.note}</strong>
+							<span style="font-size:12px; color:var(--secondary-text); display:block;">[${item.section}-${item.category}] ${item.date}</span>
+						</div>
+						<div style="text-align:right;">
+							<span style="font-weight:600;">$${item.amount}</span>
+							<span style="color:var(--danger); font-size:12px; cursor:pointer; display:block;" onclick="deleteExpense(${item.id})">刪除</span>
+						</div>
+					</div>
+				`;
+			});
+
+			totalDisplay.innerText = `$${total.toLocaleString()}`;
+		}
+
+		// 儲存預算設定
+		function saveBudget(e) {
+			e.preventDefault();
+			const sec = document.getElementById('bgSection').value;
+			const cat = document.getElementById('bgCategory').value.trim();
+			const amount = parseFloat(document.getElementById('bgAmount').value);
+
+			if (!categories[sec]) categories[sec] = {};
+			categories[sec][cat] = amount;
+
+			localStorage.setItem('my_budgets', JSON.stringify(categories));
+			document.getElementById('bgCategory').value = '';
+			document.getElementById('bgAmount').value = '';
+
+			renderCategorySelect();
+			renderBudgetStatus();
+			alert('預算已成功更新！');
+		}
+
+		// 渲染預算執行狀況
+		function renderBudgetStatus() {
+			const container = document.getElementById('budgetStatusList');
+			container.innerHTML = '';
+
+			for (let sec in categories) {
+				container.innerHTML += `<div style="font-weight:bold; margin-top:12px; margin-bottom:6px; color:var(--accent);">${sec}</div>`;
+				let secCats = categories[sec] || {};
+				
 				if (Object.keys(secCats).length === 0) {
 					container.innerHTML += `<div style="font-size:12px; color:var(--secondary-text); margin-bottom:12px;">尚無編列項目</div>`;
 				}
+
 				for (let cat in secCats) {
 					let budgetVal = secCats[cat] || 0;
 					let spentVal = userExp
@@ -74,7 +500,7 @@ let secCats = categories[sec] || {};
 			recognition.start();
 		}
 
-		// 解析語音文字（提煉金額與備註）
+		// 解析語音文字
 		function parseVoiceText(text) {
 			const matchNum = text.match(/\d+/);
 			if (matchNum) {
