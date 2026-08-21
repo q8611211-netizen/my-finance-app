@@ -1,519 +1,1626 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-	<title>個人財務助手 Pro</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>財務管理助手 Pro</title>
+    
+    <!-- iOS PWA 全螢幕設定 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="財務助手 Pro">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/isometric-folders/180/money-bag.png">
 
-	<!-- iOS PWA 必備標籤 -->
-	<meta name="apple-mobile-web-app-capable" content="yes">
-	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-	<meta name="apple-mobile-web-app-title" content="財務助手">
-	<link rel="apple-touch-icon" href="https://img.icons8.com/isometric/512/wallet.png">
+    <!-- Chart.js 引入（用於繪製圓餅圖） -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-	<style>
-		:root {
-			--bg-primary: #F2F2F7;
-			--card-bg: #FFFFFF;
-			--text-primary: #000000;
-			--secondary-text: #8E8E93;
-			--accent: #007AFF;
-			--danger: #FF3B30;
-			--success: #34C759;
-			--border: #C6C6C8;
-		}
+    <style>
+        :root {
+            --bg-color: #F2F2F7;
+            --card-bg: #FFFFFF;
+            --text-color: #1C1C1E;
+            --secondary-text: #8E8E93;
+            --primary: #007AFF;
+            --success: #34C759;
+            --warning: #FF9500;
+            --danger: #FF3B30;
+            --border-color: #E5E5EA;
+        }
 
-		@media (prefers-color-scheme: dark) {
-			:root {
-				--bg-primary: #000000;
-				--card-bg: #1C1C1E;
-				--text-primary: #FFFFFF;
-				--secondary-text: #8E8E93;
-				--accent: #0A84FF;
-				--danger: #FF453A;
-				--success: #30D158;
-				--border: #38383A;
-			}
-		}
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --card-bg: #1C1C1E;
+                --text-color: #FFFFFF;
+                --secondary-text: #8E8E93;
+                --border-color: #38383A;
+            }
+        }
 
-		* {
-			box-sizing: border-box;
-			margin: 0;
-			padding: 0;
-			font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-			-webkit-tap-highlight-color: transparent;
-		}
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+            margin: 0;
+            padding: 0;
+        }
 
-		body {
-			background-color: var(--bg-primary);
-			color: var(--text-primary);
-			padding-top: env(safe-area-inset-top);
-			padding-bottom: calc(env(safe-area-inset-bottom) + 70px);
-			min-height: 100vh;
-		}
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding-bottom: 90px;
+            padding-top: env(safe-area-inset-top);
+        }
 
-		/* Header */
-		.header {
-			padding: 16px 20px;
-			background: var(--bg-primary);
-			position: sticky;
-			top: 0;
-			z-index: 100;
-			backdrop-filter: blur(10px);
-		}
+        .header {
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            border-bottom: 0.5px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
 
-		.header h1 {
-			font-size: 28px;
-			font-weight: 700;
-		}
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .logout-btn { color: var(--danger); font-size: 14px; border: none; background: none; cursor: pointer; }
 
-		/* Container & Cards */
-		.container {
-			padding: 0 16px;
-		}
+        .container { padding: 16px; }
 
-		.card {
-			background: var(--card-bg);
-			border-radius: 12px;
-			padding: 16px;
-			margin-bottom: 16px;
-			box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-		}
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
 
-		.card-title {
-			font-size: 14px;
-			color: var(--secondary-text);
-			margin-bottom: 8px;
-			text-transform: uppercase;
-		}
+        .card h2 { font-size: 16px; margin-bottom: 12px; color: var(--secondary-text); font-weight: 500; }
+        .card h3 { font-size: 14px; margin: 12px 0 8px 0; color: var(--primary); font-weight: 600; }
 
-		.amount-display {
-			font-size: 32px;
-			font-weight: 700;
-			color: var(--text-primary);
-		}
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; color: var(--secondary-text); margin-bottom: 4px; }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 16px;
+        }
 
-		/* Form Inputs */
-		.form-group {
-			margin-bottom: 12px;
-		}
+        /* 優化 iOS 日曆選取器樣式 */
+        input[type="date"] {
+            position: relative;
+            min-height: 44px;
+        }
 
-		label {
-			display: block;
-			font-size: 13px;
-			color: var(--secondary-text);
-			margin-bottom: 4px;
-		}
+        button.btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
 
-		input, select {
-			width: 100%;
-			padding: 12px;
-			border-radius: 8px;
-			border: 1px solid var(--border);
-			background: var(--card-bg);
-			color: var(--text-primary);
-			font-size: 16px;
-			outline: none;
-		}
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border-radius: 6px;
+            border: none;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+        }
 
-		/* Buttons */
-		.btn {
-			width: 100%;
-			padding: 14px;
-			border-radius: 10px;
-			border: none;
-			background: var(--accent);
-			color: white;
-			font-size: 16px;
-			font-weight: 600;
-			cursor: pointer;
-			transition: opacity 0.2s;
-		}
+        .btn-voice {
+            background: var(--warning);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
 
-		.btn:active {
-			opacity: 0.7;
-		}
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; }
+        .stat-box { padding: 8px; background: var(--bg-color); border-radius: 8px; }
+        .stat-box .title { font-size: 11px; color: var(--secondary-text); }
+        .stat-box .num { font-size: 14px; font-weight: 600; margin-top: 4px; }
 
-		.btn-voice {
-			background: #5856D6;
-			margin-bottom: 12px;
-		}
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 65px;
+            background: var(--card-bg);
+            border-top: 0.5px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 100;
+        }
 
-		.voice-recording {
-			animation: pulse 1.5s infinite;
-			background: var(--danger) !important;
-		}
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--secondary-text);
+            font-size: 10px;
+            border: none;
+            background: none;
+            width: 20%;
+        }
 
-		@keyframes pulse {
-			0% { opacity: 1; }
-			50% { opacity: 0.6; }
-			100% { opacity: 1; }
-		}
+        .nav-item.active { color: var(--primary); }
+        .nav-item svg { width: 22px; height: 22px; fill: currentColor; margin-bottom: 2px; }
 
-		/* List Items */
-		.list-item {
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			padding: 12px 0;
-			border-bottom: 0.5px solid var(--border);
-		}
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
 
-		.list-item:last-child {
-			border-bottom: none;
-		}
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 0.5px solid var(--border-color);
+        }
+        .list-item:last-child { border-bottom: none; }
 
-		/* Bottom Navigation Bar */
-		.tab-bar {
-			position: fixed;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			height: calc(50px + env(safe-area-inset-bottom));
-			padding-bottom: env(safe-area-inset-bottom);
-			background: var(--card-bg);
-			border-top: 0.5px solid var(--border);
-			display: flex;
-			justify-content: space-around;
-			align-items: center;
-			z-index: 1000;
-		}
+        .badge {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: var(--border-color);
+            color: var(--secondary-text);
+        }
 
-		.tab-item {
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			font-size: 10px;
-			color: var(--secondary-text);
-			text-decoration: none;
-			cursor: pointer;
-		}
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-color);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-		.tab-item.active {
-			color: var(--accent);
-		}
+        .bank-item {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
 
-		.tab-icon {
-			font-size: 20px;
-			margin-bottom: 2px;
-		}
+        .voice-recording {
+            animation: pulse 1.5s infinite;
+            background: var(--danger) !important;
+        }
 
-		.page {
-			display: none;
-		}
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
 
-		.page.active {
-			display: block;
-		}
-	</style>
+        .rank-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 13px;
+            border-bottom: 0.5px dashed var(--border-color);
+        }
+        .rank-item:last-child { border-bottom: none; }
+        .rank-num { font-weight: bold; width: 24px; color: var(--primary); }
+
+        .log-item {
+            font-size: 12px;
+            padding: 8px 0;
+            border-bottom: 0.5px solid var(--border-color);
+            color: var(--secondary-text);
+        }
+
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
-	<div class="header">
-		<h1 id="pageTitle">記帳助手</h1>
-	</div>
+    <!-- 登入畫面 -->
+    <div id="loginView" class="login-overlay">
+        <div class="card" style="width: 100%; max-width: 320px;">
+            <h1 style="text-align: center; margin-bottom: 20px;">財務管理助手 Pro</h1>
+            <div class="form-group">
+                <label>選擇身分</label>
+                <select id="loginSelect">
+                    <option value="admin">管理者 (Admin)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>密碼</label>
+                <input type="password" id="loginPassword" placeholder="請輸入密碼">
+            </div>
+            <button class="btn-primary" onclick="login()">登入</button>
+        </div>
+    </div>
 
-	<div class="container">
-		<!-- 頁面 1：記帳與消費清單 -->
-		<div id="page-record" class="page active">
-			<div class="card">
-				<div class="card-title">本月總消費</div>
-				<div class="amount-display" id="totalSpentDisplay">$0</div>
-			</div>
+    <!-- 主要內容 -->
+    <div id="appView" style="display: none;">
+        <div class="header">
+            <h1 id="currentUserTitle">財務助手</h1>
+            <button class="logout-btn" onclick="logout()">登出 / 切換</button>
+        </div>
 
-			<div class="card">
-				<button id="voiceBtn" class="btn btn-voice" onclick="toggleVoiceRecognition()">🎤 語音輸入 (例如: "今天花費 150 元吃午餐")</button>
+        <div class="container">
+            <!-- 管理者視圖 -->
+            <div id="adminSection" class="tab-content">
+                <div class="card">
+                    <h2>新增用戶 (最多 2 位)</h2>
+                    <div class="form-group">
+                        <label>用戶名稱</label>
+                        <input type="text" id="newUserName" placeholder="請輸入名字">
+                    </div>
+                    <div class="form-group">
+                        <label>密碼 (需包含大小寫英文字母與數字，至少6碼)</label>
+                        <input type="password" id="newUserPassword" placeholder="如: User123">
+                    </div>
+                    <button class="btn-primary" onclick="addUser()">新增用戶</button>
+                </div>
+                <div class="card">
+                    <h2>目前用戶列表</h2>
+                    <div id="userList"></div>
+                </div>
+                <div class="card">
+                    <h2>已停用/待復原帳號資料 (7天內可復原)</h2>
+                    <div id="deletedUserList"></div>
+                </div>
+                <div class="card">
+                    <h2>用戶消費記帳修改/刪除日誌 (保留6個月)</h2>
+                    <div id="auditLogList"></div>
+                </div>
+            </div>
 
-				<form id="expForm" onsubmit="addExpense(event)">
-					<div class="form-group">
-						<label>區塊 / 類別</label>
-						<select id="expSectionCat" required></select>
-					</div>
-					<div class="form-group">
-						<label>金額</label>
-						<input type="number" id="expAmount" placeholder="請輸入金額" required min="1">
-					</div>
-					<div class="form-group">
-						<label>備註 / 用途</label>
-						<input type="text" id="expNote" placeholder="選填（例如：午餐、搭計程車）">
-					</div>
-					<button type="submit" class="btn">新增紀錄</button>
-				</form>
-			</div>
+            <!-- 用戶功能視圖 -->
+            <div id="userSection">
+                <!-- 1. 預算分配 -->
+                <div id="tabBudget" class="tab-content">
+                    <div class="card">
+                        <h2>1. 收入設定 (631儲蓄法)</h2>
+                        <button id="voiceBudgetBtn" class="btn-voice" onclick="toggleBudgetVoiceRecognition()">
+                            🎤 語音輸入收入 (例如: "安麗收入 5000 元")
+                        </button>
+                        <div class="form-group"><label>月薪</label><input type="number" id="incSalary" value="0" oninput="calcIncome()"></div>
+                        <div class="form-group"><label>安麗收入</label><input type="number" id="incAmway" value="0" oninput="calcIncome()"></div>
+                        
+                        <!-- 活存利息細項 -->
+                        <div class="form-group">
+                            <label>活存利息 (多間銀行細項)</label>
+                            <div id="bankList"></div>
+                            <button class="btn-small" style="margin-top:4px;" onclick="addBankInput()">+ 新增銀行</button>
+                        </div>
 
-			<div class="card">
-				<div class="card-title">近期消費紀錄</div>
-				<div id="expenseList"></div>
-			</div>
-		</div>
+                        <div class="form-group"><label>中獎發票</label><input type="number" id="incLottery" value="0" oninput="calcIncome()"></div>
+                        
+                        <div style="margin-top:12px; font-weight:bold;">總收入：$<span id="totalIncome">0</span></div>
+                        
+                        <div class="grid-3" style="margin-top: 10px;">
+                            <div class="stat-box"><div class="title">生活必須(60%)</div><div class="num" id="bNeeds">$0</div></div>
+                            <div class="stat-box"><div class="title">投資理財(30%)</div><div class="num" id="bInvest">$0</div></div>
+                            <div class="stat-box"><div class="title">緊急儲備(10%)</div><div class="num" id="bEmergency">$0</div></div>
+                        </div>
+                    </div>
 
-		<!-- 頁面 2：預算規劃與控制 -->
-		<div id="page-budget" class="page">
-			<div class="card">
-				<div class="card-title">設定類別預算</div>
-				<form id="budgetForm" onsubmit="saveBudget(event)">
-					<div class="form-group">
-						<label>選擇區塊</label>
-						<select id="bgSection" required onchange="updateCategoryOptions()">
-							<option value="需要">需要 (Needs)</option>
-							<option value="想要">想要 (Wants)</option>
-							<option value="儲蓄">儲蓄 (Savings)</option>
-						</select>
-					</div>
-					<div class="form-group">
-						<label>類別名稱</label>
-						<input type="text" id="bgCategory" placeholder="例如: 飲食、娛樂、房租" required>
-					</div>
-					<div class="form-group">
-						<label>預算金額</label>
-						<input type="number" id="bgAmount" placeholder="請輸入預算上限" required min="0">
-					</div>
-					<button type="submit" class="btn">儲存預算設定</button>
-				</form>
-			</div>
+                    <div class="card">
+                        <h2>2. 自定義消費額度調整 (三大區塊)</h2>
+                        <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 8px;">系統已自動載入您在「用戶設定」中預設的細項目與額度</p>
+                        
+                        <h3>生活必須 (60%)</h3>
+                        <div id="catNeeds"></div>
+                        <button class="btn-small" onclick="addCategoryPrompt('needs')">+ 新增生活必須項目</button>
 
-			<div class="card">
-				<div class="card-title">預算執行狀況</div>
-				<div id="budgetStatusList"></div>
-			</div>
-		</div>
-	</div>
+                        <h3>投資理財 (30%)</h3>
+                        <div id="catInvest"></div>
+                        <button class="btn-small" onclick="addCategoryPrompt('invest')">+ 新增投資理財項目</button>
 
-	<!-- 底部導覽列 -->
-	<div class="tab-bar">
-		<div class="tab-item active" onclick="switchTab('record', '記帳助手', this)">
-			<span class="tab-icon">📝</span>
-			<span>記帳</span>
-		</div>
-		<div class="tab-item" onclick="switchTab('budget', '預算管理', this)">
-			<span class="tab-icon">📊</span>
-			<span>預算</span>
-		</div>
-	</div>
+                        <h3>緊急儲備 (10%)</h3>
+                        <div id="catEmergency"></div>
+                        <button class="btn-small" onclick="addCategoryPrompt('emergency')">+ 新增緊急儲備項目</button>
 
-	<script>
-		let categories = JSON.parse(localStorage.getItem('my_budgets')) || {
-			'需要': { '餐飲': 9000, '交通': 2000 },
-			'想要': { '娛樂': 3000 },
-			'儲蓄': { '緊急預備金': 5000 }
-		};
+                        <button class="btn-primary" style="margin-top: 20px;" onclick="saveBudget()">儲存本月預算配置</button>
+                    </div>
+                </div>
 
-		let userExp = JSON.parse(localStorage.getItem('my_expenses')) || [];
-		let isRecording = false;
-		let recognition = null;
+                <!-- 2. 消費記帳 -->
+                <div id="tabRecord" class="tab-content">
+                    <div class="card">
+                        <h2 id="expenseFormTitle">記錄消費</h2>
+                        <button id="voiceBtn" class="btn-voice" onclick="toggleVoiceRecognition()">
+                            🎤 語音輸入 (例如: "今天花費 150 元吃午餐")
+                        </button>
+                        <input type="hidden" id="editingExpenseId" value="">
+                        
+                        <!-- 1-1 日曆選取器優化 -->
+                        <div class="form-group">
+                            <label>消費日期 📅 (點擊開啟日曆選擇)</label>
+                            <input type="date" id="expDate">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>金額</label>
+                            <input type="number" id="expAmount" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>用途描述 <span style="color:var(--danger)">* (必填，如：牛排晚餐、買股票)</span></label>
+                            <input type="text" id="expNote" placeholder="例如：晚餐牛肉麵、台積電零股">
+                        </div>
+                        <div class="form-group">
+                            <label>消費類別</label>
+                            <select id="expCategory"></select>
+                        </div>
+                        <button class="btn-primary" id="saveExpenseBtn" onclick="addExpense()">新增記帳</button>
+                        <button class="btn-small" id="cancelEditBtn" style="background:var(--secondary-text); width:100%; margin-top:8px; display:none;" onclick="resetExpenseForm()">取消修改</button>
+                    </div>
 
-		function init() {
-			renderCategorySelect();
-			renderExpenses();
-			renderBudgetStatus();
-		}
+                    <!-- 本月細項消費排名 -->
+                    <div class="card">
+                        <h2>🏆 本月三大區塊具體消費項目排行榜</h2>
+                        <p style="font-size:11px; color:var(--secondary-text); margin-bottom:8px;">根據具體「用途描述」進行獨立排行統計</p>
+                        <div id="rankingSection"></div>
+                    </div>
 
-		// 切換 Tab 頁面
-		function switchTab(pageId, title, tabEl) {
-			document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-			document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-			
-			document.getElementById('page-' + pageId).classList.add('active');
-			document.getElementById('pageTitle').innerText = title;
-			tabEl.classList.add('active');
+                    <div class="card">
+                        <h2>近期紀錄</h2>
+                        <div id="expenseHistory"></div>
+                    </div>
+                </div>
 
-			if(pageId === 'budget') renderBudgetStatus();
-		}
+                <!-- 3. 餘額統計與歷史圖表 -->
+                <div id="tabStats" class="tab-content">
+                    <!-- 月份切換器 -->
+                    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                        <h2 style="margin:0;">檢視月份：</h2>
+                        <select id="statsMonthSelect" style="width: auto; padding: 6px 12px;" onchange="renderStats()">
+                            <!-- 動態載入可選月份 -->
+                        </select>
+                    </div>
 
-		// 更新記帳選單中的分類
-		function renderCategorySelect() {
-			const select = document.getElementById('expSectionCat');
-			select.innerHTML = '';
-			for (let sec in categories) {
-				for (let cat in categories[sec]) {
-					let opt = document.createElement('option');
-					opt.value = `${sec}|${cat}`;
-					opt.innerText = `[${sec}] ${cat}`;
-					select.appendChild(opt);
-				}
-			}
-		}
+                    <div class="card">
+                        <h2>三大區塊與總餘額佔比</h2>
+                        <div style="position: relative; height:240px; width:100%;">
+                            <canvas id="balancePieChart"></canvas>
+                        </div>
+                    </div>
 
-		// 新增消費
-		function addExpense(e) {
-			e.preventDefault();
-			const secCat = document.getElementById('expSectionCat').value.split('|');
-			const amount = parseFloat(document.getElementById('expAmount').value);
-			const note = document.getElementById('expNote').value || '未分類支出';
+                    <div class="card">
+                        <h2>當月預算與餘額統計 (三大區塊)</h2>
+                        <div id="statSummary"></div>
+                    </div>
+                </div>
 
-			const newExp = {
-				id: Date.now(),
-				section: secCat[0],
-				category: secCat[1],
-				amount: amount,
-				note: note,
-				date: new Date().toLocaleDateString('zh-TW')
-			};
+                <!-- 2-1 新增：獨立「歷史月資料庫」管理專區 -->
+                <div id="tabHistoryDB" class="tab-content">
+                    <div class="card">
+                        <h2>📅 歷年月份資料庫管理</h2>
+                        <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 12px;">勾選您欲處理的月份資料，可進行批次 CSV 匯出或刪除移至緩衝區。</p>
+                        
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                            <button class="btn-small" onclick="selectAllMonths(true)">全選</button>
+                            <button class="btn-small" style="background:var(--secondary-text);" onclick="selectAllMonths(false)">取消全選</button>
+                        </div>
 
-			userExp.unshift(newExp);
-			localStorage.setItem('my_expenses', JSON.stringify(userExp));
+                        <div id="monthlyDatabaseList">
+                            <!-- 動態載入月資料項目 -->
+                        </div>
 
-			document.getElementById('expAmount').value = '';
-			document.getElementById('expNote').value = '';
+                        <div style="margin-top: 16px; display: flex; gap: 10px;">
+                            <button class="btn-primary" style="background: var(--success);" onclick="exportSelectedMonthsCSV()">📥 匯出勾選月份 (CSV含圓餅圖數據)</button>
+                            <button class="btn-primary" style="background: var(--danger);" onclick="deleteSelectedMonths()">🗑️ 刪除勾選月份</button>
+                        </div>
+                    </div>
 
-			renderExpenses();
-		}
+                    <!-- 2-3 刪除保留期復原專區 -->
+                    <div class="card">
+                        <h2>🛡️ 刪除緩衝備份區 (3天保留期)</h2>
+                        <p style="font-size: 11px; color: var(--secondary-text); margin-bottom: 8px;">刪除的月資料會在此保存 72 小時，超過時間將由系統自動永久清除。</p>
+                        <div id="softDeletedMonthsList">
+                            <!-- 動態載入暫存刪除的月份 -->
+                        </div>
+                    </div>
+                </div>
 
-		// 刪除消費紀錄
-		function deleteExpense(id) {
-			userExp = userExp.filter(item => item.id !== id);
-			localStorage.setItem('my_expenses', JSON.stringify(userExp));
-			renderExpenses();
-		}
+                <!-- 5. 用戶設定 (設定預設三大區塊細項) -->
+                <div id="tabSettings" class="tab-content">
+                    <div class="card">
+                        <h2>個人預設細項與範本設定</h2>
+                        <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 12px;">在此處設定的細項與預設額度，會在您每次開啟預算分配時自動帶入。</p>
 
-		// 渲染消費列表與計算總花費
-		function renderExpenses() {
-			const list = document.getElementById('expenseList');
-			const totalDisplay = document.getElementById('totalSpentDisplay');
-			list.innerHTML = '';
+                        <h3>生活必須 (60%) 預設細項</h3>
+                        <div id="settingCatNeeds"></div>
+                        <button class="btn-small" onclick="addSettingCategoryPrompt('needs')">+ 新增預設項目</button>
 
-			let total = 0;
-			if (userExp.length === 0) {
-				list.innerHTML = `<div style="font-size:14px; color:var(--secondary-text); text-align:center; padding: 12px 0;">尚無消費紀錄</div>`;
-			}
+                        <h3>投資理財 (30%) 預設細項</h3>
+                        <div id="settingCatInvest"></div>
+                        <button class="btn-small" onclick="addSettingCategoryPrompt('invest')">+ 新增預設項目</button>
 
-			userExp.forEach(item => {
-				total += item.amount;
-				list.innerHTML += `
-					<div class="list-item">
-						<div>
-							<strong>${item.note}</strong>
-							<span style="font-size:12px; color:var(--secondary-text); display:block;">[${item.section}-${item.category}] ${item.date}</span>
-						</div>
-						<div style="text-align:right;">
-							<span style="font-weight:600;">$${item.amount}</span>
-							<span style="color:var(--danger); font-size:12px; cursor:pointer; display:block;" onclick="deleteExpense(${item.id})">刪除</span>
-						</div>
-					</div>
-				`;
-			});
+                        <h3>緊急儲備 (10%) 預設細項</h3>
+                        <div id="settingCatEmergency"></div>
+                        <button class="btn-small" onclick="addSettingCategoryPrompt('emergency')">+ 新增預設項目</button>
 
-			totalDisplay.innerText = `$${total.toLocaleString()}`;
-		}
+                        <button class="btn-primary" style="margin-top: 20px;" onclick="saveUserSettings()">儲存預設設定</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-		// 儲存預算設定
-		function saveBudget(e) {
-			e.preventDefault();
-			const sec = document.getElementById('bgSection').value;
-			const cat = document.getElementById('bgCategory').value.trim();
-			const amount = parseFloat(document.getElementById('bgAmount').value);
+        <!-- 底部導覽列 -->
+        <nav class="nav-bar" id="userNav">
+            <button class="nav-item active" onclick="switchTab('tabBudget', this)">
+                <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+                預算分配
+            </button>
+            <button class="nav-item" onclick="switchTab('tabRecord', this)">
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2 .9 2 2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                消費記帳
+            </button>
+            <button class="nav-item" onclick="switchTab('tabStats', this)">
+                <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                餘額統計
+            </button>
+            <button class="nav-item" onclick="switchTab('tabHistoryDB', this)">
+                <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+                月資料庫
+            </button>
+            <button class="nav-item" onclick="switchTab('tabSettings', this)">
+                <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6-3.6z"/></svg>
+                用戶設定
+            </button>
+        </nav>
+    </div>
 
-			if (!categories[sec]) categories[sec] = {};
-			categories[sec][cat] = amount;
+    <script>
+        const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{6,}$/;
 
-			localStorage.setItem('my_budgets', JSON.stringify(categories));
-			document.getElementById('bgCategory').value = '';
-			document.getElementById('bgAmount').value = '';
+        let state = JSON.parse(localStorage.getItem('ios_finance_app_v2')) || {
+            users: [],
+            deletedUsers: [],
+            budgets: {},
+            userTemplates: {}, 
+            expenses: [],
+            auditLogs: [],
+            deletedMonths: [] // 2-3 月份數據刪除暫存區 (3天保留期)
+        };
 
-			renderCategorySelect();
-			renderBudgetStatus();
-			alert('預算已成功更新！');
-		}
+        let currentUser = null;
+        let isRecording = false;
+        let isBudgetRecording = false;
+        let recognition = null;
+        let pieChartInstance = null;
 
-		// 渲染預算執行狀況
-		function renderBudgetStatus() {
-			const container = document.getElementById('budgetStatusList');
-			container.innerHTML = '';
+        function saveState() {
+            localStorage.setItem('ios_finance_app_v2', JSON.stringify(state));
+        }
 
-			for (let sec in categories) {
-				container.innerHTML += `<div style="font-weight:bold; margin-top:12px; margin-bottom:6px; color:var(--accent);">${sec}</div>`;
-				let secCats = categories[sec] || {};
-				
-				if (Object.keys(secCats).length === 0) {
-					container.innerHTML += `<div style="font-size:12px; color:var(--secondary-text); margin-bottom:12px;">尚無編列項目</div>`;
-				}
+        function init() {
+            cleanupOldDeletedUsers();
+            cleanupOldAuditLogs();
+            cleanupOldDeletedMonths(); // 2-3 自動清理超過3天的已刪除月份
+            updateLoginDropdown();
+            document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+        }
 
-				for (let cat in secCats) {
-					let budgetVal = secCats[cat] || 0;
-					let spentVal = userExp
-						.filter(e => e.section === sec && e.category === cat)
-						.reduce((sum, e) => sum + e.amount, 0);
-					let remainVal = budgetVal - spentVal;
-					let colorStyle = remainVal < 0 ? 'color: var(--danger);' : 'color: var(--success);';
+        function cleanupOldDeletedUsers() {
+            const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+            state.deletedUsers = state.deletedUsers.filter(du => (now - du.deletedAt) < SEVEN_DAYS);
+            saveState();
+        }
 
-					container.innerHTML += `
-						<div class="list-item">
-							<div>
-								<strong>${cat}</strong><br>
-								<span style="font-size:12px; color:var(--secondary-text);">預算 $${budgetVal} | 已花費 $${spentVal}</span>
-							</div>
-							<div style="font-weight:600; ${colorStyle}">
-								${remainVal < 0 ? '超支' : '剩餘'} $${Math.abs(remainVal)}
-							</div>
-						</div>
-					`;
-				}
-			}
-		}
+        function cleanupOldAuditLogs() {
+            if (!state.auditLogs) state.auditLogs = [];
+            const SIX_MONTHS = 180 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+            state.auditLogs = state.auditLogs.filter(log => (now - log.timestamp) < SIX_MONTHS);
+            saveState();
+        }
 
-		// Web Speech API 語音辨識
-		function toggleVoiceRecognition() {
-			const btn = document.getElementById('voiceBtn');
-			
-			if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-				alert('您的瀏覽器不支援語音辨識功能（請使用 iOS Safari / Chrome）');
-				return;
-			}
+        // 2-3 檢查並清理超過 3 天 (72小時) 的刪除月份資料
+        function cleanupOldDeletedMonths() {
+            if (!state.deletedMonths) state.deletedMonths = [];
+            const THREE_DAYS = 3 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+            state.deletedMonths = state.deletedMonths.filter(dm => (now - dm.deletedAt) < THREE_DAYS);
+            saveState();
+        }
 
-			if (isRecording) {
-				recognition.stop();
-				return;
-			}
+        function addAuditLog(action, oldData, newData) {
+            if (!state.auditLogs) state.auditLogs = [];
+            state.auditLogs.unshift({
+                id: 'log_' + Date.now(),
+                timestamp: Date.now(),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                action,
+                oldData,
+                newData
+            });
+            cleanupOldAuditLogs();
+            saveState();
+        }
 
-			const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-			recognition = new SpeechRecognition();
-			recognition.lang = 'zh-TW';
-			recognition.interimResults = false;
+        function updateLoginDropdown() {
+            const select = document.getElementById('loginSelect');
+            select.innerHTML = '<option value="admin">管理者 (Admin)</option>';
+            state.users.forEach(u => {
+                select.innerHTML += `<option value="${u.id}">${u.name}</option>`;
+            });
+        }
 
-			recognition.onstart = () => {
-				isRecording = true;
-				btn.classList.add('voice-recording');
-				btn.innerText = '🎙️ 聆聽中... 請說出金額與用途';
-			};
+        function login() {
+            const val = document.getElementById('loginSelect').value;
+            const pwd = document.getElementById('loginPassword').value;
 
-			recognition.onresult = (event) => {
-				const text = event.results[0][0].transcript;
-				btn.innerText = '🎤 語音輸入 (例如: "今天花費 150 元吃午餐")';
-				btn.classList.remove('voice-recording');
-				isRecording = false;
-				parseVoiceText(text);
-			};
+            if (val === 'admin') {
+                if (pwd !== 'admin') {
+                    alert('管理者密碼錯誤！(預設密碼為 admin)');
+                    return;
+                }
+                currentUser = { id: 'admin', name: '管理者' };
+                document.getElementById('adminSection').style.display = 'block';
+                document.getElementById('userSection').style.display = 'none';
+                document.getElementById('userNav').style.display = 'none';
+                renderAdminView();
+            } else {
+                const targetUser = state.users.find(u => u.id === val);
+                if (!targetUser || targetUser.password !== pwd) {
+                    alert('密碼錯誤！');
+                    return;
+                }
+                currentUser = targetUser;
+                document.getElementById('adminSection').style.display = 'none';
+                document.getElementById('userSection').style.display = 'block';
+                document.getElementById('userNav').style.display = 'flex';
+                initUserView();
+            }
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('appView').style.display = 'block';
+            document.getElementById('currentUserTitle').innerText = currentUser.name;
+            document.getElementById('loginPassword').value = '';
+        }
 
-			recognition.onerror = (event) => {
-				alert('語音辨識失敗：' + event.error);
-				btn.innerText = '🎤 語音輸入 (例如: "今天花費 150 元吃午餐")';
-				btn.classList.remove('voice-recording');
-				isRecording = false;
-			};
+        function logout() {
+            document.getElementById('loginView').style.display = 'flex';
+            document.getElementById('appView').style.display = 'none';
+            updateLoginDropdown();
+        }
 
-			recognition.onend = () => {
-				btn.innerText = '🎤 語音輸入 (例如: "今天花費 150 元吃午餐")';
-				btn.classList.remove('voice-recording');
-				isRecording = false;
-			};
+        function renderAdminView() {
+            const list = document.getElementById('userList');
+            list.innerHTML = '';
+            state.users.forEach(u => {
+                list.innerHTML += `
+                    <div class="list-item">
+                        <div>
+                            <strong>${u.name}</strong><br>
+                            <span style="font-size:12px; color:var(--secondary-text);">密碼: ${u.password}</span>
+                        </div>
+                        <div>
+                            <button class="btn-small" onclick="editUserPassword('${u.id}')">修改密碼</button>
+                            <button class="btn-small" style="background:var(--danger);" onclick="deleteUser('${u.id}')">刪除</button>
+                        </div>
+                    </div>
+                `;
+            });
 
-			recognition.start();
-		}
+            const deletedList = document.getElementById('deletedUserList');
+            deletedList.innerHTML = '';
+            if (state.deletedUsers.length === 0) {
+                deletedList.innerHTML = '<div style="font-size:12px; color:var(--secondary-text);">目前無可復原資料</div>';
+            } else {
+                state.deletedUsers.forEach(du => {
+                    deletedList.innerHTML += `
+                        <div class="list-item">
+                            <div>
+                                <strong>${du.user.name}</strong><br>
+                                <span style="font-size:11px; color:var(--secondary-text);">刪除時間: ${new Date(du.deletedAt).toLocaleDateString()}</span>
+                            </div>
+                            <button class="btn-small" style="background:var(--success);" onclick="restoreUser('${du.user.id}')">重建並復原</button>
+                        </div>
+                    `;
+                });
+            }
 
-		// 解析語音文字
-		function parseVoiceText(text) {
-			const matchNum = text.match(/\d+/);
-			if (matchNum) {
-				document.getElementById('expAmount').value = matchNum[0];
-				let note = text.replace(matchNum[0], '').replace(/(元|塊|錢|花費|今天|吃了|買了)/g, '').trim();
-				if (note) document.getElementById('expNote').value = note;
-				alert(`語音辨識成功！\n解析結果：金額 $${matchNum[0]}，描述：「${note || '無'}」`);
-			} else {
-				alert(`已接收語音：「${text}」，但未偵測到數字金額，請手動輸入數字。`);
-			}
-		}
+            const auditList = document.getElementById('auditLogList');
+            auditList.innerHTML = '';
+            const logs = state.auditLogs || [];
+            if (logs.length === 0) {
+                auditList.innerHTML = '<div style="font-size:12px; color:var(--secondary-text);">暫無修改或刪除紀錄</div>';
+            } else {
+                logs.forEach(log => {
+                    const timeStr = new Date(log.timestamp).toLocaleString();
+                    let detail = '';
+                    if (log.action === '刪除') {
+                        detail = `刪除舊紀錄：${log.oldData.date} | ${log.oldData.note} | $${log.oldData.amount}`;
+                    } else {
+                        detail = `修改前的內容：${log.oldData.date} | ${log.oldData.note} | $${log.oldData.amount}<br>修改後的內容：${log.newData.date} | ${log.newData.note} | $${log.newData.amount}`;
+                    }
+                    auditList.innerHTML += `
+                        <div class="log-item">
+                            <strong style="color:var(--text-color);">${log.userName}</strong> 於 ${timeStr} <span style="color:${log.action === '刪除' ? 'var(--danger)' : 'var(--warning)'}; font-weight:bold;">[${log.action}]</span><br>
+                            ${detail}
+                        </div>
+                    `;
+                });
+            }
+        }
 
-		window.onload = init;
-	</script>
+        function addUser() {
+            if (state.users.length >= 2) {
+                alert('管理者最多只能新增 2 位用戶！');
+                return;
+            }
+            const nameInput = document.getElementById('newUserName');
+            const pwdInput = document.getElementById('newUserPassword');
+            const name = nameInput.value.trim();
+            const pwd = pwdInput.value.trim();
+
+            if (!name) { alert('請輸入用戶名稱'); return; }
+            if (!PWD_REGEX.test(pwd)) {
+                alert('密碼格式不符合規定！需包含大小寫英文字母與數字，且長度至少6碼。');
+                return;
+            }
+
+            const newUser = { id: 'user_' + Date.now(), name, password: pwd };
+            state.users.push(newUser);
+            
+            if (!state.userTemplates) state.userTemplates = {};
+            state.userTemplates[newUser.id] = {
+                needs: { '房租': 10000, '餐費': 8000 },
+                invest: { '台股ETF': 5000 },
+                emergency: { '預備金': 3000 }
+            };
+
+            state.budgets[newUser.id] = {
+                income: { salary: 0, amway: 0, banks: [{ bankName: '國泰', amount: 0 }], lottery: 0 },
+                categories: JSON.parse(JSON.stringify(state.userTemplates[newUser.id]))
+            };
+
+            saveState();
+            nameInput.value = '';
+            pwdInput.value = '';
+            renderAdminView();
+        }
+
+        function editUserPassword(id) {
+            const user = state.users.find(u => u.id === id);
+            const newPwd = prompt(`修改 ${user.name} 的密碼 (須包含大小寫英文字母及數字，至少6碼):`, user.password);
+            if (newPwd) {
+                if (!PWD_REGEX.test(newPwd)) {
+                    alert('密碼格式不符合規定！');
+                    return;
+                }
+                user.password = newPwd;
+                saveState();
+                renderAdminView();
+            }
+        }
+
+        function deleteUser(id) {
+            if (!confirm('確定刪除此用戶？資料將會在備份區保留 7 天內可復原。')) return;
+            const uIndex = state.users.findIndex(u => u.id === id);
+            if (uIndex > -1) {
+                const deletedUserObj = {
+                    user: state.users[uIndex],
+                    budget: state.budgets[id],
+                    template: state.userTemplates ? state.userTemplates[id] : null,
+                    expenses: state.expenses.filter(e => e.userId === id),
+                    deletedAt: Date.now()
+                };
+                state.deletedUsers.push(deletedUserObj);
+                
+                state.users.splice(uIndex, 1);
+                delete state.budgets[id];
+                if (state.userTemplates) delete state.userTemplates[id];
+                state.expenses = state.expenses.filter(e => e.userId !== id);
+                
+                saveState();
+                renderAdminView();
+            }
+        }
+
+        function restoreUser(id) {
+            const dIndex = state.deletedUsers.findIndex(du => du.user.id === id);
+            if (dIndex > -1) {
+                if (state.users.length >= 2) {
+                    alert('現有用戶已達上限 (2位)，無法復原！請先刪除其他用戶。');
+                    return;
+                }
+                const du = state.deletedUsers[dIndex];
+                state.users.push(du.user);
+                state.budgets[du.user.id] = du.budget;
+                if (du.template) {
+                    if (!state.userTemplates) state.userTemplates = {};
+                    state.userTemplates[du.user.id] = du.template;
+                }
+                state.expenses.push(...du.expenses);
+                state.deletedUsers.splice(dIndex, 1);
+
+                saveState();
+                renderAdminView();
+                alert('帳號與歷史數據已完美復原！');
+            }
+        }
+
+        function initUserView() {
+            switchTab('tabBudget', document.querySelectorAll('.nav-item')[0]);
+            loadUserBudget();
+            renderExpenseHistory();
+            renderExpenseRankings();
+            populateMonthDropdown();
+            renderStats();
+            renderHistoryDatabase();
+            loadUserSettings();
+        }
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+
+            if (tabId === 'tabBudget') loadUserBudget();
+            if (tabId === 'tabRecord') {
+                updateCategoryDropdown();
+                renderExpenseRankings();
+            }
+            if (tabId === 'tabStats') {
+                populateMonthDropdown();
+                renderStats();
+            }
+            if (tabId === 'tabHistoryDB') {
+                renderHistoryDatabase();
+            }
+            if (tabId === 'tabSettings') loadUserSettings();
+        }
+
+        function loadUserBudget() {
+            const b = state.budgets[currentUser.id] || { 
+                income: { salary: 0, amway: 0, banks: [], lottery: 0 }, 
+                categories: { needs: {}, invest: {}, emergency: {} } 
+            };
+
+            const userTpl = (state.userTemplates && state.userTemplates[currentUser.id]) ? state.userTemplates[currentUser.id] : { needs: {}, invest: {}, emergency: {} };
+            
+            if (!b.categories || Object.keys(b.categories.needs || {}).length === 0) {
+                b.categories = JSON.parse(JSON.stringify(userTpl));
+            }
+            
+            document.getElementById('incSalary').value = b.income.salary || 0;
+            document.getElementById('incAmway').value = b.income.amway || 0;
+            document.getElementById('incLottery').value = b.income.lottery || 0;
+
+            const bankContainer = document.getElementById('bankList');
+            bankContainer.innerHTML = '';
+            const bankArr = b.income.banks && b.income.banks.length ? b.income.banks : [{ bankName: '國泰', amount: 0 }];
+            bankArr.forEach((bank) => {
+                bankContainer.innerHTML += `
+                    <div class="bank-item">
+                        <input type="text" style="width:40%" class="bank-name" value="${bank.bankName}" placeholder="銀行名稱">
+                        <input type="number" style="width:50%" class="bank-val" value="${bank.amount}" oninput="calcIncome()" placeholder="利息">
+                        <button style="border:none; background:none; color:var(--danger);" onclick="removeBankInput(this)">✕</button>
+                    </div>
+                `;
+            });
+
+            renderCategoryInputs('catNeeds', b.categories?.needs || {});
+            renderCategoryInputs('catInvest', b.categories?.invest || {});
+            renderCategoryInputs('catEmergency', b.categories?.emergency || {});
+
+            calcIncome();
+        }
+
+        function addBankInput() {
+            const bankContainer = document.getElementById('bankList');
+            const div = document.createElement('div');
+            div.className = 'bank-item';
+            div.innerHTML = `
+                <input type="text" style="width:40%" class="bank-name" value="" placeholder="銀行名稱">
+                <input type="number" style="width:50%" class="bank-val" value="0" oninput="calcIncome()" placeholder="利息">
+                <button style="border:none; background:none; color:var(--danger);" onclick="removeBankInput(this)">✕</button>
+            `;
+            bankContainer.appendChild(div);
+        }
+
+        function removeBankInput(btn) {
+            btn.parentElement.remove();
+            calcIncome();
+        }
+
+        function renderCategoryInputs(containerId, catObj) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            for (let cat in catObj) {
+                container.innerHTML += `
+                    <div class="form-group" style="display:flex; gap:8px; align-items:center;">
+                        <label style="width:110px; margin:0;">${cat}</label>
+                        <input type="number" class="cat-input" data-cat="${cat}" value="${catObj[cat]}">
+                    </div>
+                `;
+            }
+        }
+
+        function calcIncome() {
+            const s = Number(document.getElementById('incSalary').value) || 0;
+            const a = Number(document.getElementById('incAmway').value) || 0;
+            const l = Number(document.getElementById('incLottery').value) || 0;
+            
+            let bankTotal = 0;
+            document.querySelectorAll('.bank-val').forEach(input => {
+                bankTotal += Number(input.value) || 0;
+            });
+
+            const total = s + a + l + bankTotal;
+
+            document.getElementById('totalIncome').innerText = total;
+            document.getElementById('bNeeds').innerText = '$' + Math.round(total * 0.6);
+            document.getElementById('bInvest').innerText = '$' + Math.round(total * 0.3);
+            document.getElementById('bEmergency').innerText = '$' + Math.round(total * 0.1);
+        }
+
+        function addCategoryPrompt(type) {
+            const name = prompt('請輸入類別名稱：');
+            if (name) {
+                const b = state.budgets[currentUser.id];
+                if (!b.categories[type]) b.categories[type] = {};
+                if (!b.categories[type][name]) {
+                    b.categories[type][name] = 0;
+                    saveState();
+                    loadUserBudget();
+                }
+            }
+        }
+
+        function saveBudget() {
+            const s = Number(document.getElementById('incSalary').value) || 0;
+            const a = Number(document.getElementById('incAmway').value) || 0;
+            const l = Number(document.getElementById('incLottery').value) || 0;
+
+            const banks = [];
+            document.querySelectorAll('#bankList .bank-item').forEach(item => {
+                const bName = item.querySelector('.bank-name').value.trim() || '未命名銀行';
+                const bVal = Number(item.querySelector('.bank-val').value) || 0;
+                banks.push({ bankName: bName, amount: bVal });
+            });
+
+            const categories = { needs: {}, invest: {}, emergency: {} };
+
+            const fetchCatVals = (containerId, type) => {
+                document.querySelectorAll(`#${containerId} .cat-input`).forEach(input => {
+                    categories[type][input.dataset.cat] = Number(input.value) || 0;
+                });
+            };
+
+            fetchCatVals('catNeeds', 'needs');
+            fetchCatVals('catInvest', 'invest');
+            fetchCatVals('catEmergency', 'emergency');
+
+            state.budgets[currentUser.id] = {
+                income: { salary: s, amway: a, banks, lottery: l },
+                categories
+            };
+            saveState();
+            alert('本月預算配置儲存成功！');
+        }
+
+        function loadUserSettings() {
+            if (!state.userTemplates) state.userTemplates = {};
+            const tpl = state.userTemplates[currentUser.id] || { needs: {}, invest: {}, emergency: {} };
+
+            renderSettingCategoryInputs('settingCatNeeds', tpl.needs || {}, 'needs');
+            renderSettingCategoryInputs('settingCatInvest', tpl.invest || {}, 'invest');
+            renderSettingCategoryInputs('settingCatEmergency', tpl.emergency || {}, 'emergency');
+        }
+
+        function renderSettingCategoryInputs(containerId, catObj, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            for (let cat in catObj) {
+                container.innerHTML += `
+                    <div class="form-group" style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" class="tpl-cat-name" data-type="${type}" value="${cat}" style="width:40%" placeholder="項目名稱">
+                        <input type="number" class="tpl-cat-val" data-type="${type}" value="${catObj[cat]}" style="width:50%" placeholder="預設金額">
+                        <button style="border:none; background:none; color:var(--danger);" onclick="this.parentElement.remove()">✕</button>
+                    </div>
+                `;
+            }
+        }
+
+        function addSettingCategoryPrompt(type) {
+            const containerId = type === 'needs' ? 'settingCatNeeds' : type === 'invest' ? 'settingCatInvest' : 'settingCatEmergency';
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'form-group';
+            div.style.display = 'flex';
+            div.style.gap = '8px';
+            div.style.alignItems = 'center';
+            div.innerHTML = `
+                <input type="text" class="tpl-cat-name" data-type="${type}" value="" style="width:40%" placeholder="項目名稱">
+                <input type="number" class="tpl-cat-val" data-type="${type}" value="0" style="width:50%" placeholder="預設金額">
+                <button style="border:none; background:none; color:var(--danger);" onclick="this.parentElement.remove()">✕</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function saveUserSettings() {
+            if (!state.userTemplates) state.userTemplates = {};
+            const newTpl = { needs: {}, invest: {}, emergency: {} };
+
+            const processGroup = (containerId, type) => {
+                document.querySelectorAll(`#${containerId} .form-group`).forEach(row => {
+                    const name = row.querySelector('.tpl-cat-name').value.trim();
+                    const val = Number(row.querySelector('.tpl-cat-val').value) || 0;
+                    if (name) {
+                        newTpl[type][name] = val;
+                    }
+                });
+            };
+
+            processGroup('settingCatNeeds', 'needs');
+            processGroup('settingCatInvest', 'invest');
+            processGroup('settingCatEmergency', 'emergency');
+
+            state.userTemplates[currentUser.id] = newTpl;
+            
+            if (confirm('設定已儲存！是否立即將這些預設細項與金額帶入到「本月預算分配」中？')) {
+                state.budgets[currentUser.id].categories = JSON.parse(JSON.stringify(newTpl));
+            }
+
+            saveState();
+            alert('用戶預設細項更新完畢！');
+        }
+
+        function updateCategoryDropdown() {
+            const select = document.getElementById('expCategory');
+            select.innerHTML = '';
+            const cats = state.budgets[currentUser.id]?.categories || {};
+            
+            const groupMap = { needs: '生活必須', invest: '投資理財', emergency: '緊急儲備' };
+            for (let sec in groupMap) {
+                if (cats[sec]) {
+                    let groupHtml = `<optgroup label="${groupMap[sec]}">`;
+                    for (let c in cats[sec]) {
+                        groupHtml += `<option value="${sec}:${c}">${c}</option>`;
+                    }
+                    groupHtml += `</optgroup>`;
+                    select.innerHTML += groupHtml;
+                }
+            }
+        }
+
+        function addExpense() {
+            const editId = document.getElementById('editingExpenseId').value;
+            const date = document.getElementById('expDate').value;
+            const amount = Number(document.getElementById('expAmount').value);
+            const note = document.getElementById('expNote').value.trim();
+            const catVal = document.getElementById('expCategory').value;
+
+            if (!amount || !catVal || !date) {
+                alert('請完整填寫日期、金額與消費類別');
+                return;
+            }
+
+            if (!note) {
+                alert('「用途描述」為必填欄位！例如：晚餐牛肉麵、買股票等。');
+                return;
+            }
+
+            const [section, category] = catVal.split(':');
+
+            if (editId) {
+                const targetIndex = state.expenses.findIndex(e => e.id == editId);
+                if (targetIndex > -1) {
+                    const oldExp = { ...state.expenses[targetIndex] };
+                    const newExp = {
+                        ...oldExp,
+                        date,
+                        amount,
+                        note,
+                        section,
+                        category
+                    };
+                    state.expenses[targetIndex] = newExp;
+                    addAuditLog('修改', oldExp, newExp);
+                }
+            } else {
+                state.expenses.unshift({
+                    id: Date.now(),
+                    userId: currentUser.id,
+                    date,
+                    amount,
+                    note,
+                    section,
+                    category
+                });
+            }
+
+            saveState();
+            resetExpenseForm();
+            renderExpenseHistory();
+            renderExpenseRankings();
+            populateMonthDropdown();
+        }
+
+        function resetExpenseForm() {
+            document.getElementById('editingExpenseId').value = '';
+            document.getElementById('expAmount').value = '';
+            document.getElementById('expNote').value = '';
+            document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('expenseFormTitle').innerText = '記錄消費';
+            document.getElementById('saveExpenseBtn').innerText = '新增記帳';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+        }
+
+        function editExpense(id) {
+            const target = state.expenses.find(e => e.id === id);
+            if (!target) return;
+
+            document.getElementById('editingExpenseId').value = target.id;
+            document.getElementById('expDate').value = target.date;
+            document.getElementById('expAmount').value = target.amount;
+            document.getElementById('expNote').value = target.note;
+            
+            updateCategoryDropdown();
+            document.getElementById('expCategory').value = `${target.section}:${target.category}`;
+
+            document.getElementById('expenseFormTitle').innerText = '修改消費紀錄';
+            document.getElementById('saveExpenseBtn').innerText = '儲存修改';
+            document.getElementById('cancelEditBtn').style.display = 'block';
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function deleteExpense(id) {
+            if (!confirm('確定要刪除這筆記帳紀錄嗎？')) return;
+            const targetIndex = state.expenses.findIndex(e => e.id === id);
+            if (targetIndex > -1) {
+                const oldExp = state.expenses[targetIndex];
+                addAuditLog('刪除', oldExp, null);
+                state.expenses.splice(targetIndex, 1);
+                saveState();
+                renderExpenseHistory();
+                renderExpenseRankings();
+                populateMonthDropdown();
+            }
+        }
+
+        function renderExpenseHistory() {
+            const container = document.getElementById('expenseHistory');
+            container.innerHTML = '';
+            const userExp = state.expenses.filter(e => e.userId === currentUser.id);
+
+            if (userExp.length === 0) {
+                container.innerHTML = '<div style="color:var(--secondary-text); text-align:center;">尚無消費紀錄</div>';
+                return;
+            }
+
+            userExp.forEach(e => {
+                container.innerHTML += `
+                    <div class="list-item">
+                        <div>
+                            <div>${e.note} <span class="badge">${e.category}</span></div>
+                            <div style="font-size:11px; color:var(--secondary-text);">${e.date}</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="font-weight:600; color:var(--danger);">-$${e.amount}</div>
+                            <button class="btn-small" style="background:var(--primary); padding:4px 8px;" onclick="editExpense(${e.id})">修改</button>
+                            <button class="btn-small" style="background:var(--danger); padding:4px 8px;" onclick="deleteExpense(${e.id})">刪除</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderExpenseRankings() {
+            const container = document.getElementById('rankingSection');
+            container.innerHTML = '';
+
+            const currentMonthStr = new Date().toISOString().slice(0, 7);
+            const userExp = state.expenses.filter(e => e.userId === currentUser.id && e.date.startsWith(currentMonthStr));
+            const sectionNames = { needs: '生活必須', invest: '投資理財', emergency: '緊急儲備' };
+
+            for (let sec in sectionNames) {
+                container.innerHTML += `<h3 style="margin-top:10px;">${sectionNames[sec]}</h3>`;
+
+                const itemTotals = {};
+                userExp.filter(e => e.section === sec).forEach(e => {
+                    const key = `${e.note} (${e.category})`;
+                    itemTotals[key] = (itemTotals[key] || 0) + e.amount;
+                });
+
+                const sorted = Object.keys(itemTotals)
+                    .map(item => ({ itemDesc: item, total: itemTotals[item] }))
+                    .sort((a, b) => b.total - a.total);
+
+                if (sorted.length === 0) {
+                    container.innerHTML += `<div style="font-size:12px; color:var(--secondary-text);">本月尚無消費</div>`;
+                } else {
+                    sorted.forEach((item, index) => {
+                        container.innerHTML += `
+                            <div class="rank-item">
+                                <div><span class="rank-num">#${index + 1}</span> ${item.itemDesc}</div>
+                                <div style="font-weight:600; color:var(--danger);">$${item.total}</div>
+                            </div>
+                        `;
+                    });
+                }
+            }
+        }
+
+        function populateMonthDropdown() {
+            const select = document.getElementById('statsMonthSelect');
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const monthsSet = new Set([currentMonth]);
+
+            state.expenses.filter(e => e.userId === currentUser.id).forEach(e => {
+                if (e.date) monthsSet.add(e.date.slice(0, 7));
+            });
+
+            const sortedMonths = Array.from(monthsSet).sort().reverse();
+            const currentSelected = select.value || currentMonth;
+
+            select.innerHTML = '';
+            sortedMonths.forEach(m => {
+                select.innerHTML += `<option value="${m}" ${m === currentSelected ? 'selected' : ''}>${m}</option>`;
+            });
+        }
+
+        function renderStats() {
+            const container = document.getElementById('statSummary');
+            container.innerHTML = '';
+
+            const selectedMonth = document.getElementById('statsMonthSelect').value || new Date().toISOString().slice(0, 7);
+
+            const categories = state.budgets[currentUser.id]?.categories || {};
+            const userExp = state.expenses.filter(e => e.userId === currentUser.id && e.date.startsWith(selectedMonth));
+            const income = state.budgets[currentUser.id]?.income || { salary: 0, amway: 0, banks: [], lottery: 0 };
+            
+            let bankTotal = (income.banks || []).reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+            const totalIncome = (Number(income.salary) || 0) + (Number(income.amway) || 0) + (Number(income.lottery) || 0) + bankTotal;
+
+            const sectionNames = { needs: '生活必須', invest: '投資理財', emergency: '緊急儲備' };
+
+            let spentBySec = { needs: 0, invest: 0, emergency: 0 };
+
+            for (let sec in sectionNames) {
+                container.innerHTML += `<h3>${sectionNames[sec]}</h3>`;
+                const secCats = categories[sec] || {};
+                
+                if (Object.keys(secCats).length === 0) {
+                    container.innerHTML += `<div style="font-size:12px; color:var(--secondary-text);">尚未設定項目</div>`;
+                }
+
+                for (let cat in secCats) {
+                    const budget = secCats[cat];
+                    const spent = userExp
+                        .filter(e => e.section === sec && e.category === cat)
+                        .reduce((sum, e) => sum + e.amount, 0);
+                    const remain = budget - spent;
+                    spentBySec[sec] += spent;
+
+                    container.innerHTML += `
+                        <div style="margin-bottom: 8px;">
+                            <div style="display:flex; justify-content:space-between; font-size:14px;">
+                                <span>${cat} (預算: $${budget})</span>
+                                <span style="color: ${remain < 0 ? 'var(--danger)' : 'var(--text-color)'}; font-weight:600;">
+                                    餘額: $${remain}
+                                </span>
+                            </div>
+                            <div style="font-size:11px; color:var(--secondary-text);">已消費: $${spent}</div>
+                        </div>
+                    `;
+                }
+                container.innerHTML += `<hr style="border:none; border-top:0.5px solid var(--border-color); margin: 8px 0;">`;
+            }
+
+            const totalSpent = spentBySec.needs + spentBySec.invest + spentBySec.emergency;
+            const remainingBalance = Math.max(0, totalIncome - totalSpent);
+
+            renderPieChart(spentBySec.needs, spentBySec.invest, spentBySec.emergency, remainingBalance);
+        }
+
+        function renderPieChart(needs, invest, emergency, balance) {
+            const ctx = document.getElementById('balancePieChart').getContext('2d');
+            
+            if (pieChartInstance) {
+                pieChartInstance.destroy();
+            }
+
+            pieChartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['生活必須消費', '投資理財消費', '緊急儲備消費', '剩餘總餘額'],
+                    datasets: [{
+                        data: [needs, invest, emergency, balance],
+                        backgroundColor: [
+                            '#FF9500',
+                            '#007AFF',
+                            '#FF3B30',
+                            '#34C759' 
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 12 },
+                                color: getComputedStyle(document.documentElement).getPropertyValue('--text-color').trim()
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // 2-1 & 2-2 & 2-3 月資料庫管理、圓餅圖匯出與3天復原機制
+        // ==========================================
+
+        function getMonthSummaryData(monthStr) {
+            const incomeObj = state.budgets[currentUser.id]?.income || { salary: 0, amway: 0, banks: [], lottery: 0 };
+            let bankTotal = (incomeObj.banks || []).reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+            const totalIncome = (Number(incomeObj.salary) || 0) + (Number(incomeObj.amway) || 0) + (Number(incomeObj.lottery) || 0) + bankTotal;
+
+            const monthExp = state.expenses.filter(e => e.userId === currentUser.id && e.date.startsWith(monthStr));
+            
+            let spentNeeds = 0, spentInvest = 0, spentEmergency = 0;
+            monthExp.forEach(e => {
+                if (e.section === 'needs') spentNeeds += e.amount;
+                if (e.section === 'invest') spentInvest += e.amount;
+                if (e.section === 'emergency') spentEmergency += e.amount;
+            });
+
+            const totalSpent = spentNeeds + spentInvest + spentEmergency;
+            const balance = totalIncome - totalSpent;
+
+            return {
+                month: monthStr,
+                income: totalIncome,
+                spent: totalSpent,
+                balance,
+                needs: spentNeeds,
+                invest: spentInvest,
+                emergency: spentEmergency,
+                expenses: monthExp
+            };
+        }
+
+        function renderHistoryDatabase() {
+            const listContainer = document.getElementById('monthlyDatabaseList');
+            listContainer.innerHTML = '';
+
+            const userExp = state.expenses.filter(e => e.userId === currentUser.id);
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            const monthsSet = new Set([currentMonth]);
+            userExp.forEach(e => monthsSet.add(e.date.slice(0, 7)));
+
+            const sortedMonths = Array.from(monthsSet).sort().reverse();
+
+            if (sortedMonths.length === 0) {
+                listContainer.innerHTML = '<div style="color:var(--secondary-text); text-align:center;">尚無月資料紀錄</div>';
+            } else {
+                sortedMonths.forEach(m => {
+                    const data = getMonthSummaryData(m);
+                    listContainer.innerHTML += `
+                        <div class="list-item" style="padding: 10px 0;">
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <input type="checkbox" class="checkbox-custom month-chk" value="${m}">
+                                <div>
+                                    <strong>${m} 彙總紀錄</strong><br>
+                                    <span style="font-size:12px; color:var(--secondary-text);">
+                                        預算/收入: $${data.income} | 總消費: $${data.spent} | 餘額: $${data.balance}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 渲染 3 天復原區
+            renderSoftDeletedMonths();
+        }
+
+        function selectAllMonths(select) {
+            document.querySelectorAll('.month-chk').forEach(chk => chk.checked = select);
+        }
+
+        // 2-2 CSV 匯出功能（包含圓餅圖四大區塊佔比與明細）
+        function exportSelectedMonthsCSV() {
+            const selectedCheckboxes = document.querySelectorAll('.month-chk:checked');
+            if (selectedCheckboxes.length === 0) {
+                alert('請先勾選欲匯出的月份！');
+                return;
+            }
+
+            const selectedMonths = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+            let csvContent = "\uFEFF"; // UTF-8 BOM 避免 Excel 亂碼
+
+            selectedMonths.forEach(m => {
+                const data = getMonthSummaryData(m);
+                const grandTotal = data.income > 0 ? data.income : 1; // 避免除以 0
+
+                const pNeeds = ((data.needs / grandTotal) * 100).toFixed(1);
+                const pInvest = ((data.invest / grandTotal) * 100).toFixed(1);
+                const pEmergency = ((data.emergency / grandTotal) * 100).toFixed(1);
+                const pBalance = ((Math.max(0, data.balance) / grandTotal) * 100).toFixed(1);
+
+                csvContent += `=========================================\n`;
+                csvContent += `【${m} 月份統計與圓餅圖數據彙總】\n`;
+                csvContent += `總預算收入,NTD $${data.income}\n`;
+                csvContent += `總消費金額,NTD $${data.spent}\n`;
+                csvContent += `總剩餘金額,NTD $${data.balance}\n\n`;
+
+                csvContent += `--- 圓餅圖四大區塊金額與百分比佔比 ---\n`;
+                csvContent += `區塊類別,金額(NTD),圓餅圖佔比(%)\n`;
+                csvContent += `生活必須消費,${data.needs},${pNeeds}%\n`;
+                csvContent += `投資理財消費,${data.invest},${pInvest}%\n`;
+                csvContent += `緊急儲備消費,${data.emergency},${pEmergency}%\n`;
+                csvContent += `剩餘總餘額,${Math.max(0, data.balance)},${pBalance}%\n\n`;
+
+                csvContent += `--- ${m} 消費明細紀錄 ---\n`;
+                csvContent += `消費日期,大區塊,消費類別,用途描述(項目),金額(NTD)\n`;
+
+                const secNames = { needs: '生活必須', invest: '投資理財', emergency: '緊急儲備' };
+
+                if (data.expenses.length === 0) {
+                    csvContent += `無該月份記帳明細,,,,\n`;
+                } else {
+                    data.expenses.forEach(e => {
+                        csvContent += `"${e.date}","${secNames[e.section] || e.section}","${e.category}","${e.note.replace(/"/g, '""')}",${e.amount}\n`;
+                    });
+                }
+                csvContent += `\n\n`;
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `財務助手_月度資料與圓餅圖彙總_${currentUser.name}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setTimeout(() => {
+                if (confirm('勾選的月份資料與圓餅圖數據已成功匯出！\n是否要將這些已匯出的月份移至「3天刪除保留區」？')) {
+                    deleteMonthsByList(selectedMonths);
+                }
+            }, 500);
+        }
+
+        // 2-3 刪除勾選月份 (放入 3 天暫存復原區)
+        function deleteSelectedMonths() {
+            const selectedCheckboxes = document.querySelectorAll('.month-chk:checked');
+            if (selectedCheckboxes.length === 0) {
+                alert('請先勾選欲刪除的月份！');
+                return;
+            }
+
+            const selectedMonths = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+            if (confirm(`確定要刪除這 ${selectedMonths.length} 個月份的記帳資料嗎？\n資料將會移至「3天緩衝區」，72小時內皆可輕鬆復原。`)) {
+                deleteMonthsByList(selectedMonths);
+            }
+        }
+
+        function deleteMonthsByList(monthsArray) {
+            if (!state.deletedMonths) state.deletedMonths = [];
+
+            monthsArray.forEach(m => {
+                const targetExpenses = state.expenses.filter(e => e.userId === currentUser.id && e.date.startsWith(m));
+                
+                if (targetExpenses.length > 0) {
+                    state.deletedMonths.push({
+                        id: 'del_m_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                        userId: currentUser.id,
+                        month: m,
+                        expenses: targetExpenses,
+                        deletedAt: Date.now()
+                    });
+
+                    // 從主要消費陣列中移除
+                    state.expenses = state.expenses.filter(e => !(e.userId === currentUser.id && e.date.startsWith(m)));
+                }
+            });
+
+            saveState();
+            renderExpenseHistory();
+            renderExpenseRankings();
+            populateMonthDropdown();
+            renderStats();
+            renderHistoryDatabase();
+            alert('已將資料移至「3天緩衝備份區」！');
+        }
+
+        // 2-3 渲染刪除緩衝區清單
+        function renderSoftDeletedMonths() {
+            const container = document.getElementById('softDeletedMonthsList');
+            container.innerHTML = '';
+
+            const userDeletedMonths = (state.deletedMonths || []).filter(dm => dm.userId === currentUser.id);
+
+            if (userDeletedMonths.length === 0) {
+                container.innerHTML = '<div style="font-size:12px; color:var(--secondary-text);">目前無暫存刪除的月份</div>';
+                return;
+            }
+
+            userDeletedMonths.forEach(dm => {
+                const expireHoursLeft = Math.max(0, Math.round((3 * 24 - (Date.now() - dm.deletedAt) / (1000 * 60 * 60))));
+                container.innerHTML += `
+                    <div class="list-item">
+                        <div>
+                            <strong>${dm.month} 月份紀錄 (${dm.expenses.length}筆)</strong><br>
+                            <span style="font-size:11px; color:var(--warning);">剩餘保留時間: 約 ${expireHoursLeft} 小時</span>
+                        </div>
+                        <button class="btn-small" style="background:var(--success);" onclick="restoreDeletedMonth('${dm.id}')">一鍵復原</button>
+                    </div>
+                `;
+            });
+        }
+
+        // 2-3 復原被刪除的月份
+        function restoreDeletedMonth(delId) {
+            const idx = state.deletedMonths.findIndex(dm => dm.id === delId);
+            if (idx > -1) {
+                const restoredObj = state.deletedMonths[idx];
+                state.expenses.push(...restoredObj.expenses);
+                state.deletedMonths.splice(idx, 1);
+
+                saveState();
+                renderExpenseHistory();
+                renderExpenseRankings();
+                populateMonthDropdown();
+                renderStats();
+                renderHistoryDatabase();
+                alert(`已成功復原 ${restoredObj.month} 的所有記帳資料！`);
+            }
+        }
+
+        // 語音辨識：分配預算
+        function toggleBudgetVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('您的瀏覽器不支援語音辨識。');
+                return;
+            }
+
+            const btn = document.getElementById('voiceBudgetBtn');
+
+            if (isBudgetRecording) {
+                recognition.stop();
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-TW';
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isBudgetRecording = true;
+                btn.classList.add('voice-recording');
+                btn.innerText = '🔴 聆聽收入中... (如: "安麗收入 5000 元")';
+            };
+
+            recognition.onend = () => {
+                isBudgetRecording = false;
+                btn.classList.remove('voice-recording');
+                btn.innerText = '🎤 語音輸入收入 (例如: "安麗收入 5000 元")';
+            };
+
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                parseBudgetVoiceInput(text);
+            };
+
+            recognition.start();
+        }
+
+        function parseBudgetVoiceInput(text) {
+            const numMatch = text.match(/\d+/);
+            const amount = numMatch ? Number(numMatch[0]) : 0;
+
+            if (text.includes('薪') || text.includes('月薪')) {
+                document.getElementById('incSalary').value = amount;
+            } else if (text.includes('安麗')) {
+                document.getElementById('incAmway').value = amount;
+            } else if (text.includes('發票') || text.includes('中獎')) {
+                document.getElementById('incLottery').value = amount;
+            } else if (text.includes('利息') || text.includes('銀行') || text.includes('活存')) {
+                const bankInputs = document.querySelectorAll('.bank-val');
+                if (bankInputs.length > 0) bankInputs[0].value = amount;
+            }
+
+            calcIncome();
+            alert(`預算語音辨識完成！\n識別內容："${text}"\n已自動更新對應金額。`);
+        }
+
+        // 語音辨識：消費記帳
+        function toggleVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('您的瀏覽器不支援語音辨識。');
+                return;
+            }
+
+            const btn = document.getElementById('voiceBtn');
+
+            if (isRecording) {
+                recognition.stop();
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-TW';
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isRecording = true;
+                btn.classList.add('voice-recording');
+                btn.innerText = '🔴 聆聽中...請口述 (如: "午餐 120 元")';
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                btn.classList.remove('voice-recording');
+                btn.innerText = '🎤 語音輸入 (例如: "今天花費 150 元吃午餐")';
+            };
+
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                parseVoiceInput(text);
+            };
+
+            recognition.start();
+        }
+
+        function parseVoiceInput(text) {
+            const numMatch = text.match(/\d+/);
+            if (numMatch) {
+                document.getElementById('expAmount').value = numMatch[0];
+            }
+
+            let note = text.replace(/\d+/g, '').replace(/(元|塊|錢|今天|花費|消費|花了)/g, '').trim();
+            if (note) {
+                document.getElementById('expNote').value = note;
+            }
+
+            alert(`語音解析完成！\n識別內容："${text}"\n已自動填入金額與描述，請確認類別與日期後點擊新增。`);
+        }
+
+        init();
+    </script>
 </body>
 </html>
