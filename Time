@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>艾森豪時間管理</title>
+    
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="時間管理">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23007AFF'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>⏱️</text></svg>">
+
+    <style>
+        :root {
+            --bg-primary: #F2F2F7;
+            --bg-secondary: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+            --accent-blue: #007AFF;
+            --accent-red: #FF3B30;
+            --accent-orange: #FF9500;
+            --accent-green: #34C759;
+            --accent-purple: #AF52DE;
+            --border-color: #C6C6C8;
+            --card-radius: 12px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #000000;
+                --bg-secondary: #1C1C1E;
+                --text-primary: #FFFFFF;
+                --text-secondary: #8E8E93;
+                --border-color: #38383A;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: calc(env(safe-area-inset-bottom) + 65px);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Nav Tabs */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 600px;
+            background: var(--bg-secondary);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 0.5px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding-top: 8px;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+        }
+
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            width: 20%;
+        }
+
+        .tab-item.active {
+            color: var(--accent-blue);
+        }
+
+        .tab-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+
+        /* Views */
+        .view {
+            display: none;
+            padding: 16px;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+
+        /* Card System */
+        .card {
+            background: var(--bg-secondary);
+            border-radius: var(--card-radius);
+            padding: 14px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        input[type="text"], select {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 15px;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent-blue);
+            color: white;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .btn-danger {
+            background: var(--accent-red);
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+        }
+
+        /* Task Lists */
+        .task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 0.5px solid var(--border-color);
+        }
+
+        .task-item:last-child {
+            border-bottom: none;
+        }
+
+        .task-title {
+            font-size: 15px;
+            flex: 1;
+            margin-left: 8px;
+        }
+
+        .task-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-sm {
+            padding: 6px 10px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+
+        /* Eisenhower Matrix Layout */
+        .routine-card-matrix {
+            background: var(--bg-secondary);
+            border-radius: var(--card-radius);
+            padding: 12px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--accent-purple);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .matrix-box {
+            background: var(--bg-secondary);
+            border-radius: var(--card-radius);
+            padding: 10px;
+            min-height: 160px;
+            border-top: 4px solid;
+        }
+
+        .m-q1 { border-color: var(--accent-red); }
+        .m-q2 { border-color: var(--accent-orange); }
+        .m-q3 { border-color: var(--accent-blue); }
+        .m-q4 { border-color: var(--text-secondary); }
+
+        .matrix-title {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        /* Timeline Schedule */
+        .timeline-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 2px;
+        }
+
+        .mode-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+        }
+
+        .mode-btn.active {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .info-box {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.4;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .time-slot {
+            display: flex;
+            align-items: center;
+            min-height: 36px;
+            border-bottom: 0.5px solid var(--border-color);
+            font-size: 12px;
+        }
+
+        .time-label {
+            width: 65px;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
+        }
+
+        .time-content {
+            flex: 1;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: transparent;
+            word-break: break-all;
+        }
+
+        .time-slot.sleep {
+            background: rgba(142, 142, 147, 0.08);
+        }
+
+        .time-slot.work-time {
+            background: rgba(0, 122, 255, 0.05);
+        }
+
+        /* Planning Sub-tabs */
+        .sub-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+        }
+
+        .sub-tab {
+            padding: 6px 12px;
+            border-radius: 15px;
+            background: var(--bg-secondary);
+            font-size: 13px;
+            white-space: nowrap;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .sub-tab.active {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        /* Calendar Card Styling */
+        .cal-btn-large {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            text-decoration: none;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. 隨記與例行事項 -->
+    <div id="view-quick" class="view active">
+        <div class="header">隨記與例行</div>
+        <div class="card">
+            <div class="input-group">
+                <input type="text" id="quick-input" placeholder="閃念/隨記靈感...">
+                <button onclick="addQuickNote()">記錄</button>
+            </div>
+            <div id="quick-list"></div>
+        </div>
+
+        <div class="header" style="font-size: 20px;">例行事項</div>
+        <div class="card">
+            <div class="input-group">
+                <input type="text" id="routine-input" placeholder="新增每日/每週例行...">
+                <button onclick="addRoutine()">新增</button>
+            </div>
+            <div id="routine-list"></div>
+        </div>
+    </div>
+
+    <!-- 2. 艾森豪矩陣 -->
+    <div id="view-matrix" class="view">
+        <div class="header">艾森豪矩陣</div>
+        
+        <div class="routine-card-matrix">
+            <div class="matrix-title" style="color: var(--accent-purple);">🔄 固定例行事項</div>
+            <div id="matrix-routine-list"></div>
+        </div>
+
+        <div class="matrix-grid">
+            <div class="matrix-box m-q1">
+                <div class="matrix-title">重要且緊急 (Q1)</div>
+                <div id="q1-list"></div>
+            </div>
+            <div class="matrix-box m-q2">
+                <div class="matrix-title">重要不緊急 (Q2)</div>
+                <div id="q2-list"></div>
+            </div>
+            <div class="matrix-box m-q3">
+                <div class="matrix-title">不重要但緊急 (Q3)</div>
+                <div id="q3-list"></div>
+            </div>
+            <div class="matrix-box m-q4">
+                <div class="matrix-title">不重要不緊急 (Q4)</div>
+                <div id="q4-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 多維度計畫 -->
+    <div id="view-plan" class="view">
+        <div class="header">長短期計畫</div>
+        <div class="sub-tabs">
+            <div class="sub-tab active" onclick="switchPlanTab('year', this)">年</div>
+            <div class="sub-tab" onclick="switchPlanTab('quarter', this)">季</div>
+            <div class="sub-tab" onclick="switchPlanTab('month', this)">月</div>
+            <div class="sub-tab" onclick="switchPlanTab('week', this)">週</div>
+            <div class="sub-tab" onclick="switchPlanTab('day', this)">日</div>
+        </div>
+        <div class="card">
+            <div class="input-group">
+                <input type="text" id="plan-input" placeholder="新增目標/計畫...">
+                <button onclick="addPlan()">目標</button>
+            </div>
+            <div id="plan-list"></div>
+        </div>
+    </div>
+
+    <!-- 4. 今日 15分鐘 時間軸 -->
+    <div id="view-timeline" class="view">
+        <div class="header">今日時間軸</div>
+        
+        <div class="timeline-controls">
+            <div class="control-row">
+                <div class="mode-toggle">
+                    <button class="mode-btn active" id="btn-weekday" onclick="switchTimelineMode('weekday')">💼 工作日</button>
+                    <button class="mode-btn" id="btn-weekend" onclick="switchTimelineMode('weekend')">☕ 假日</button>
+                </div>
+                <button class="btn-sm" style="background: var(--accent-purple);" onclick="autoFillSchedule()">⚡ 自動帶入事項</button>
+            </div>
+            <div class="control-row">
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn-sm btn-secondary" onclick="undoTimeline()">↩️ 上一步</button>
+                    <button class="btn-sm btn-danger" onclick="resetTimeline()">🔄 重置時間軸</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            📌 <strong>使用說明：</strong><br>
+            1. <strong>彈性編輯與防誤觸：</strong>直接點擊時間格子即可編輯內容，若誤觸「重置」或「自動帶入」，可點擊「上一步」還原。<br>
+            2. <strong>快捷查看 Google 日曆：</strong>切換至「日曆」頁籤，可直接開啟日曆比對行程。
+        </div>
+
+        <div class="card" style="padding: 8px 12px;">
+            <div class="timeline" id="timeline-container"></div>
+        </div>
+    </div>
+
+    <!-- 5. Google 日曆檢視 -->
+    <div id="view-calendar" class="view">
+        <div class="header">Google 日曆</div>
+        
+        <div class="card">
+            <h3 style="font-size: 16px; margin-bottom: 8px;">📅 快速前往 Google 日曆</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
+                由於 Google 日曆有嚴格的安全權限（禁止網頁直接內嵌未公開的日曆），請點擊下方按鈕直接切換至 Google Calendar 查看最新行程：
+            </p>
+
+            <a href="https://calendar.google.com/" target="_blank" class="cal-btn-large" style="background: var(--accent-blue);">
+                📅 開啟 Google 日曆網頁版
+            </a>
+            
+            <a href="googlecalendar://" class="cal-btn-large" style="background: var(--accent-green);">
+                📱 開啟 Google Calendar App
+            </a>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size: 15px; margin-bottom: 8px;">💡 公開日曆嵌入設定 (選填)</h3>
+            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.4;">
+                若您已將特定日曆設為「公開」，可貼上嵌入網址，即可在下方內嵌呈現：
+            </p>
+            <div class="input-group" style="margin-bottom: 8px;">
+                <input type="text" id="gcal-url-input" placeholder="https://calendar.google.com/calendar/embed?src=...">
+                <button onclick="saveGCalUrl()">載入</button>
+            </div>
+        </div>
+
+        <div id="gcal-container" class="card" style="padding: 0; overflow: hidden; display: none;">
+            <iframe id="gcal-iframe" style="width:100%; height:450px; border:none;" src="" frameborder="0" scrolling="no"></iframe>
+        </div>
+    </div>
+
+    <!-- 6. 設定與資料備份 -->
+    <div id="view-settings" class="view">
+        <div class="header">系統設定</div>
+        
+        <div class="card">
+            <h3 style="font-size: 16px; margin-bottom: 8px;">📊 資料匯出 (歷史比較與備份)</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                將所有隨記、矩陣任務、長短期計畫與每日時間軸記錄完整匯出為 JSON 備份檔或 CSV 報表檔，方便進行跨期時間分配分析。
+            </p>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="exportData('json')" style="flex: 1;">匯出備份 (JSON)</button>
+                <button onclick="exportData('csv')" style="flex: 1; background: var(--accent-green);">匯出報表 (CSV)</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size: 16px; margin-bottom: 8px;">📥 資料匯入</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
+                選擇先前匯出的 JSON 備份檔案以還原資料庫。
+            </p>
+            <input type="file" id="import-file-input" accept=".json" onchange="importJSON(event)" style="width: 100%;">
+        </div>
+    </div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="switchView('quick', this)">
+            <div class="tab-icon">📝</div>
+            <span>隨記</span>
+        </div>
+        <div class="tab-item" onclick="switchView('matrix', this)">
+            <div class="tab-icon">🎯</div>
+            <span>矩陣</span>
+        </div>
+        <div class="tab-item" onclick="switchView('plan', this)">
+            <div class="tab-icon">📅</div>
+            <span>計畫</span>
+        </div>
+        <div class="tab-item" onclick="switchView('timeline', this)">
+            <div class="tab-icon">⏳</div>
+            <span>時間軸</span>
+        </div>
+        <div class="tab-item" onclick="switchView('calendar', this)">
+            <div class="tab-icon">📆</div>
+            <span>日曆</span>
+        </div>
+        <div class="tab-item" onclick="switchView('settings', this)">
+            <div class="tab-icon">⚙️</div>
+            <span>設定</span>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let state = JSON.parse(localStorage.getItem('time_app_data')) || {
+            quickNotes: [],
+            routines: [],
+            matrix: { q1: [], q2: [], q3: [], q4: [] },
+            plans: { year: [], quarter: [], month: [], week: [], day: [] },
+            timeline: {
+                weekday: {},
+                weekend: {}
+            },
+            gcalUrl: ""
+        };
+
+        if (!state.timeline.weekday && !state.timeline.weekend) {
+            state.timeline = { weekday: state.timeline || {}, weekend: {} };
+        }
+
+        let currentPlanLevel = 'year';
+        let currentTimelineMode = 'weekday';
+
+        // 歷史復原紀錄 (Undo History Stack)
+        let timelineHistory = [];
+
+        function saveTimelineState() {
+            timelineHistory.push(JSON.stringify(state.timeline[currentTimelineMode]));
+            if (timelineHistory.length > 15) timelineHistory.shift();
+        }
+
+        function undoTimeline() {
+            if (timelineHistory.length === 0) {
+                alert('已無可復原的上一步紀錄。');
+                return;
+            }
+            const previousState = timelineHistory.pop();
+            state.timeline[currentTimelineMode] = JSON.parse(previousState);
+            localStorage.setItem('time_app_data', JSON.stringify(state));
+            initTimeline();
+        }
+
+        function resetTimeline() {
+            if (confirm('確定要重置目前的今日時間軸嗎？這將清空此模式下的所有填寫事項。')) {
+                saveTimelineState();
+                state.timeline[currentTimelineMode] = {};
+                localStorage.setItem('time_app_data', JSON.stringify(state));
+                initTimeline();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('time_app_data', JSON.stringify(state));
+            renderAll();
+        }
+
+        // View Switching
+        function switchView(viewId, el) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            document.getElementById(`view-${viewId}`).classList.add('active');
+            el.classList.add('active');
+            
+            if (viewId === 'calendar') {
+                loadGCalIframe();
+            }
+        }
+
+        function switchPlanTab(level, el) {
+            currentPlanLevel = level;
+            document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+            if (el) el.classList.add('active');
+            renderPlans();
+        }
+
+        function switchTimelineMode(mode) {
+            currentTimelineMode = mode;
+            document.getElementById('btn-weekday').classList.toggle('active', mode === 'weekday');
+            document.getElementById('btn-weekend').classList.toggle('active', mode === 'weekend');
+            initTimeline();
+        }
+
+        // Quick Notes & Routines
+        function addQuickNote() {
+            const input = document.getElementById('quick-input');
+            if (!input.value.trim()) return;
+            state.quickNotes.push({ id: Date.now(), text: input.value });
+            input.value = '';
+            saveData();
+        }
+
+        function addRoutine() {
+            const input = document.getElementById('routine-input');
+            if (!input.value.trim()) return;
+            state.routines.push({ id: Date.now(), text: input.value });
+            input.value = '';
+            saveData();
+        }
+
+        function dispatchQuickNote(id, targetQ) {
+            if (!targetQ) return;
+            const index = state.quickNotes.findIndex(n => n.id === id);
+            if (index > -1) {
+                const note = state.quickNotes.splice(index, 1)[0];
+                state.matrix[targetQ].push(note.text);
+                saveData();
+            }
+        }
+
+        function deleteItem(category, id, subKey = null) {
+            if (subKey) {
+                state[category][subKey] = state[category][subKey].filter(item => item.id !== id && item !== id);
+            } else {
+                state[category] = state[category].filter(item => item.id !== id);
+            }
+            saveData();
+        }
+
+        // Plans
+        function addPlan() {
+            const input = document.getElementById('plan-input');
+            if (!input.value.trim()) return;
+            state.plans[currentPlanLevel].push({ id: Date.now(), text: input.value, done: false });
+            input.value = '';
+            saveData();
+        }
+
+        // Timeline Setup
+        function initTimeline() {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = '';
+            const activeData = state.timeline[currentTimelineMode] || {};
+
+            for (let hour = 0; hour < 24; hour++) {
+                for (let min = 0; min < 60; min += 15) {
+                    const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                    const isSleepDefault = (hour >= 23 || hour < 6) || (hour === 6 && min < 30);
+                    const isWorkDefault = currentTimelineMode === 'weekday' && 
+                        ((hour >= 8 && hour < 12) || (hour >= 13 && hour < 17));
+
+                    const slot = document.createElement('div');
+                    let classNames = 'time-slot';
+                    if (isSleepDefault) classNames += ' sleep';
+                    else if (isWorkDefault) classNames += ' work-time';
+                    slot.className = classNames;
+
+                    const label = document.createElement('div');
+                    label.className = 'time-label';
+                    label.innerText = timeStr;
+
+                    const content = document.createElement('div');
+                    content.className = 'time-content';
+                    content.contentEditable = true;
+
+                    if (activeData[timeStr] !== undefined) {
+                        content.innerText = activeData[timeStr];
+                    } else if (isSleepDefault) {
+                        content.innerText = '😴 睡眠時間';
+                    } else if (isWorkDefault) {
+                        content.innerText = '💼 工作時間';
+                    } else {
+                        content.innerText = '';
+                    }
+
+                    content.onfocus = () => {
+                        saveTimelineState();
+                    };
+
+                    content.onblur = (e) => {
+                        let text = e.target.innerText.trim();
+                        state.timeline[currentTimelineMode][timeStr] = text;
+                        localStorage.setItem('time_app_data', JSON.stringify(state));
+                    };
+
+                    slot.appendChild(label);
+                    slot.appendChild(content);
+                    container.appendChild(slot);
+                }
+            }
+        }
+
+        // 智慧自動帶入
+        function autoFillSchedule() {
+            let pool = [];
+
+            state.routines.forEach(item => pool.push(`🔄 ${item.text}`));
+            state.matrix.q1.forEach(item => pool.push(`🚨 [Q1] ${item}`));
+            state.matrix.q3.forEach(item => pool.push(`⚡ [Q3] ${item}`));
+            state.matrix.q2.forEach(item => pool.push(`🎯 [Q2] ${item}`));
+
+            if (state.matrix.q1.length === 0) {
+                state.matrix.q4.forEach(item => pool.push(`☕ [Q4] ${item}`));
+            }
+
+            if (pool.length === 0) {
+                alert('目前沒有可自動排入的事項。');
+                return;
+            }
+
+            saveTimelineState();
+
+            let poolIndex = 0;
+            const timelineData = state.timeline[currentTimelineMode];
+
+            for (let hour = 0; hour < 24; hour++) {
+                for (let min = 0; min < 60; min += 15) {
+                    const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                    const currentVal = timelineData[timeStr];
+
+                    const isDefaultSleep = (hour >= 23 || hour < 6 || (hour === 6 && min < 30)) && (!currentVal || currentVal === '😴 睡眠時間');
+                    const isDefaultWork = currentTimelineMode === 'weekday' && ((hour >= 8 && hour < 12) || (hour >= 13 && hour < 17)) && (!currentVal || currentVal === '💼 工作時間');
+                    const isEmptySlot = !currentVal || currentVal.trim() === '';
+
+                    if ((isEmptySlot || isDefaultSleep || isDefaultWork) && poolIndex < pool.length) {
+                        timelineData[timeStr] = pool[poolIndex];
+                        poolIndex++;
+                    }
+                }
+            }
+
+            localStorage.setItem('time_app_data', JSON.stringify(state));
+            initTimeline();
+            alert(`已根據優先級成功將 ${poolIndex} 項任務自動安排至時間軸！`);
+        }
+
+        // Google 日曆處理
+        function saveGCalUrl() {
+            const urlInput = document.getElementById('gcal-url-input').value.trim();
+            state.gcalUrl = urlInput;
+            localStorage.setItem('time_app_data', JSON.stringify(state));
+            loadGCalIframe();
+        }
+
+        function loadGCalIframe() {
+            const input = document.getElementById('gcal-url-input');
+            const container = document.getElementById('gcal-container');
+            const iframe = document.getElementById('gcal-iframe');
+
+            if (state.gcalUrl) {
+                input.value = state.gcalUrl;
+                iframe.src = state.gcalUrl;
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        // 資料匯出 (JSON / CSV 報表)
+        function exportData(type) {
+            const nowStr = new Date().toISOString().slice(0, 10);
+            if (type === 'json') {
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                downloadAnchor.setAttribute("download", `time_management_backup_${nowStr}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+            } else if (type === 'csv') {
+                let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+                csvContent += "類別,項目內容,額外備註\n";
+
+                state.routines.forEach(r => csvContent += `例行事項,"${r.text}",每日執行\n`);
+                state.matrix.q1.forEach(q => csvContent += `矩陣 Q1 重要緊急,"${q}",高優先\n`);
+                state.matrix.q2.forEach(q => csvContent += `矩陣 Q2 重要不緊急,"${q}",長期價值\n`);
+                state.matrix.q3.forEach(q => csvContent += `矩陣 Q3 不重要緊急,"${q}",規劃安排\n`);
+                state.matrix.q4.forEach(q => csvContent += `矩陣 Q4 不重要不緊急,"${q}",低優先\n`);
+
+                Object.keys(state.plans).forEach(level => {
+                    state.plans[level].forEach(p => csvContent += `計畫 (${level}),"${p.text}",目標\n`);
+                });
+
+                Object.keys(state.timeline).forEach(mode => {
+                    Object.keys(state.timeline[mode]).forEach(time => {
+                        const val = state.timeline[mode][time];
+                        if (val) csvContent += `時間軸 (${mode}),"${time} - ${val}",每日安排\n`;
+                    });
+                });
+
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", encodeURI(csvContent));
+                downloadAnchor.setAttribute("download", `time_management_report_${nowStr}.csv`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+            }
+        }
+
+        // 資料備份匯入 JSON
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (confirm('匯入備份將會覆蓋現有資料，確定繼續嗎？')) {
+                        state = importedData;
+                        saveData();
+                        initTimeline();
+                        alert('資料庫還原成功！');
+                    }
+                } catch (err) {
+                    alert('匯入失敗：檔案格式不正確。');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Render Functions
+        function renderAll() {
+            // Render Quick Notes
+            const qList = document.getElementById('quick-list');
+            qList.innerHTML = state.quickNotes.map(n => `
+                <div class="task-item">
+                    <span class="task-title">${n.text}</span>
+                    <div class="task-actions">
+                        <select onchange="dispatchQuickNote(${n.id}, this.value); this.value='';" style="padding: 2px 4px; font-size:11px;">
+                            <option value="">轉至矩陣...</option>
+                            <option value="q1">Q1 重要緊急</option>
+                            <option value="q2">Q2 重要不急</option>
+                            <option value="q3">Q3 不重緊急</option>
+                            <option value="q4">Q4 不重不急</option>
+                        </select>
+                        <button class="btn-sm" style="background:var(--accent-red)" onclick="deleteItem('quickNotes', ${n.id})">✕</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render Routines
+            const rList = document.getElementById('routine-list');
+            rList.innerHTML = state.routines.map(r => `
+                <div class="task-item">
+                    <span class="task-title">🔄 ${r.text}</span>
+                    <button class="btn-sm" style="background:var(--accent-red)" onclick="deleteItem('routines', ${r.id})">✕</button>
+                </div>
+            `).join('');
+
+            // Render Routines in Matrix View
+            const mrList = document.getElementById('matrix-routine-list');
+            if (state.routines.length === 0) {
+                mrList.innerHTML = `<div style="font-size:12px; color:var(--text-secondary); font-style:italic;">尚無例行事項</div>`;
+            } else {
+                mrList.innerHTML = state.routines.map(r => `
+                    <div class="task-item" style="font-size:13px; padding:6px 0;">
+                        <span>🔄 ${r.text}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Render Matrix
+            ['q1', 'q2', 'q3', 'q4'].forEach(q => {
+                const el = document.getElementById(`${q}-list`);
+                el.innerHTML = state.matrix[q].map((text, idx) => `
+                    <div class="task-item" style="font-size:13px;">
+                        <span>• ${text}</span>
+                        <button class="btn-sm" style="background:none; color:var(--accent-red); padding:0 4px;" onclick="state.matrix['${q}'].splice(${idx},1); saveData();">✕</button>
+                    </div>
+                `).join('');
+            });
+
+            renderPlans();
+        }
+
+        function renderPlans() {
+            const pList = document.getElementById('plan-list');
+            pList.innerHTML = state.plans[currentPlanLevel].map(p => `
+                <div class="task-item">
+                    <span class="task-title">${p.text}</span>
+                    <button class="btn-sm" style="background:var(--accent-red)" onclick="deleteItem('plans', ${p.id}, '${currentPlanLevel}')">✕</button>
+                </div>
+            `).join('');
+        }
+
+        // Initialize App
+        initTimeline();
+        renderAll();
+    </script>
+</body>
+</html>
