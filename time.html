@@ -160,23 +160,37 @@
             background: var(--text-secondary);
         }
 
-        /* Task Lists */
+        /* Task Lists & Draggable Items */
         .task-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 10px;
+            background: var(--bg-secondary);
             border-bottom: 0.5px solid var(--border-color);
+            cursor: grab;
+            transition: background 0.15s ease;
         }
 
-        .task-item:last-child {
-            border-bottom: none;
+        .task-item:active {
+            cursor: grabbing;
+        }
+
+        .task-item.dragging {
+            opacity: 0.4;
+            background: var(--bg-primary);
+        }
+
+        .drag-handle {
+            margin-right: 8px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: grab;
         }
 
         .task-title {
             font-size: 15px;
             flex: 1;
-            margin-left: 8px;
         }
 
         .task-actions {
@@ -283,9 +297,16 @@
         .time-slot {
             display: flex;
             align-items: center;
-            min-height: 36px;
+            min-height: 38px;
             border-bottom: 0.5px solid var(--border-color);
             font-size: 12px;
+            padding: 2px 0;
+            transition: background 0.15s ease;
+        }
+
+        .time-slot.drag-over {
+            background: rgba(0, 122, 255, 0.2) !important;
+            border: 1px dashed var(--accent-blue);
         }
 
         .time-label {
@@ -293,21 +314,29 @@
             color: var(--text-secondary);
             font-variant-numeric: tabular-nums;
             font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .time-content {
             flex: 1;
-            min-height: 36px;
+            min-height: 34px;
             display: flex;
             align-items: center;
             padding: 4px 8px;
             border-radius: 4px;
             background: transparent;
             word-break: break-all;
+            outline: none;
         }
 
         .time-slot.sleep {
             background: rgba(142, 142, 147, 0.08);
+        }
+
+        .time-slot.routine-fixed {
+            background: rgba(175, 82, 222, 0.08);
         }
 
         .time-slot.work-time {
@@ -337,7 +366,6 @@
             color: white;
         }
 
-        /* Calendar Card Styling */
         .cal-btn-large {
             width: 100%;
             padding: 14px;
@@ -447,8 +475,8 @@
 
         <div class="info-box">
             📌 <strong>使用說明：</strong><br>
-            1. <strong>彈性編輯與防誤觸：</strong>直接點擊時間格子即可編輯內容，若誤觸「重置」或「自動帶入」，可點擊「上一步」還原。<br>
-            2. <strong>快捷查看 Google 日曆：</strong>切換至「日曆」頁籤，可直接開啟日曆比對行程。
+            1. <strong>拖拉排序：</strong>長按左側圖示可拖拉對調時間軸與計畫順序。<br>
+            2. <strong>固定作息：</strong>已自動代入 06:30 盥洗、07:00 冥想、07:15 出發上班、12:45 午睡、17:15 下班、22:30 洗澡、22:45 看書等設定。
         </div>
 
         <div class="card" style="padding: 8px 12px;">
@@ -463,7 +491,7 @@
         <div class="card">
             <h3 style="font-size: 16px; margin-bottom: 8px;">📅 快速前往 Google 日曆</h3>
             <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
-                由於 Google 日曆有嚴格的安全權限（禁止網頁直接內嵌未公開的日曆），請點擊下方按鈕直接切換至 Google Calendar 查看最新行程：
+                點擊下方按鈕直接開啟 Google Calendar：
             </p>
 
             <a href="https://calendar.google.com/" target="_blank" class="cal-btn-large" style="background: var(--accent-blue);">
@@ -476,10 +504,7 @@
         </div>
 
         <div class="card">
-            <h3 style="font-size: 15px; margin-bottom: 8px;">💡 公開日曆嵌入設定 (選填)</h3>
-            <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; line-height: 1.4;">
-                若您已將特定日曆設為「公開」，可貼上嵌入網址，即可在下方內嵌呈現：
-            </p>
+            <h3 style="font-size: 15px; margin-bottom: 8px;">💡 公開日曆嵌入設定</h3>
             <div class="input-group" style="margin-bottom: 8px;">
                 <input type="text" id="gcal-url-input" placeholder="https://calendar.google.com/calendar/embed?src=...">
                 <button onclick="saveGCalUrl()">載入</button>
@@ -491,26 +516,19 @@
         </div>
     </div>
 
-    <!-- 6. 設定與資料備份 -->
+    <!-- 6. 設定與跨裝置同步 -->
     <div id="view-settings" class="view">
-        <div class="header">系統設定</div>
+        <div class="header">系統設定與同步</div>
         
         <div class="card">
-            <h3 style="font-size: 16px; margin-bottom: 8px;">📊 資料匯出 (歷史比較與備份)</h3>
+            <h3 style="font-size: 16px; margin-bottom: 8px;">📲 跨裝置資料同步 (備份與還原)</h3>
             <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
-                將所有隨記、矩陣任務、長短期計畫與每日時間軸記錄完整匯出為 JSON 備份檔或 CSV 報表檔，方便進行跨期時間分配分析。
+                要將資料同步至另一台裝置（例如 iPhone 到 iPad/電腦），請匯出 JSON 備份檔，並於另一台裝置選取匯入即可完整複製。
             </p>
-            <div style="display: flex; gap: 8px;">
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                 <button onclick="exportData('json')" style="flex: 1;">匯出備份 (JSON)</button>
                 <button onclick="exportData('csv')" style="flex: 1; background: var(--accent-green);">匯出報表 (CSV)</button>
             </div>
-        </div>
-
-        <div class="card">
-            <h3 style="font-size: 16px; margin-bottom: 8px;">📥 資料匯入</h3>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
-                選擇先前匯出的 JSON 備份檔案以還原資料庫。
-            </p>
             <input type="file" id="import-file-input" accept=".json" onchange="importJSON(event)" style="width: 100%;">
         </div>
     </div>
@@ -563,9 +581,24 @@
 
         let currentPlanLevel = 'year';
         let currentTimelineMode = 'weekday';
-
-        // 歷史復原紀錄 (Undo History Stack)
         let timelineHistory = [];
+        let draggedTimeSlot = null;
+
+        // 固定時間行程對照表
+        const fixedRoutines = {
+            common: {
+                "06:30": "🧼 盥洗",
+                "06:45": "📋 準備",
+                "07:00": "🧘 冥想",
+                "22:30": "🚿 洗澡",
+                "22:45": "📖 看書"
+            },
+            weekday: {
+                "07:15": "🚗 出發上班",
+                "12:45": "😴 午睡",
+                "17:15": "🏢 下班"
+            }
+        };
 
         function saveTimelineState() {
             timelineHistory.push(JSON.stringify(state.timeline[currentTimelineMode]));
@@ -659,7 +692,7 @@
             saveData();
         }
 
-        // Plans
+        // Plans Drag and Drop
         function addPlan() {
             const input = document.getElementById('plan-input');
             if (!input.value.trim()) return;
@@ -668,7 +701,7 @@
             saveData();
         }
 
-        // Timeline Setup
+        // Timeline Setup with Drag Swap
         function initTimeline() {
             const container = document.getElementById('timeline-container');
             container.innerHTML = '';
@@ -681,15 +714,21 @@
                     const isWorkDefault = currentTimelineMode === 'weekday' && 
                         ((hour >= 8 && hour < 12) || (hour >= 13 && hour < 17));
 
+                    // Check fixed routines
+                    let fixedTask = fixedRoutines.common[timeStr] || (currentTimelineMode === 'weekday' ? fixedRoutines.weekday[timeStr] : null);
+
                     const slot = document.createElement('div');
                     let classNames = 'time-slot';
-                    if (isSleepDefault) classNames += ' sleep';
+                    if (fixedTask) classNames += ' routine-fixed';
+                    else if (isSleepDefault) classNames += ' sleep';
                     else if (isWorkDefault) classNames += ' work-time';
                     slot.className = classNames;
+                    slot.draggable = true;
+                    slot.dataset.time = timeStr;
 
                     const label = document.createElement('div');
                     label.className = 'time-label';
-                    label.innerText = timeStr;
+                    label.innerHTML = `<span class="drag-handle">⋮⋮</span>${timeStr}`;
 
                     const content = document.createElement('div');
                     content.className = 'time-content';
@@ -697,6 +736,8 @@
 
                     if (activeData[timeStr] !== undefined) {
                         content.innerText = activeData[timeStr];
+                    } else if (fixedTask) {
+                        content.innerText = fixedTask;
                     } else if (isSleepDefault) {
                         content.innerText = '😴 睡眠時間';
                     } else if (isWorkDefault) {
@@ -705,15 +746,41 @@
                         content.innerText = '';
                     }
 
-                    content.onfocus = () => {
-                        saveTimelineState();
-                    };
-
+                    content.onfocus = () => saveTimelineState();
                     content.onblur = (e) => {
                         let text = e.target.innerText.trim();
                         state.timeline[currentTimelineMode][timeStr] = text;
                         localStorage.setItem('time_app_data', JSON.stringify(state));
                     };
+
+                    // Timeline Drag Events
+                    slot.addEventListener('dragstart', (e) => {
+                        draggedTimeSlot = timeStr;
+                        e.dataTransfer.setData('text/plain', timeStr);
+                    });
+
+                    slot.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        slot.classList.add('drag-over');
+                    });
+
+                    slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
+
+                    slot.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        slot.classList.remove('drag-over');
+                        const targetTime = slot.dataset.time;
+                        if (draggedTimeSlot && draggedTimeSlot !== targetTime) {
+                            saveTimelineState();
+                            const val1 = state.timeline[currentTimelineMode][draggedTimeSlot] || document.querySelector(`[data-time="${draggedTimeSlot}"] .time-content`).innerText;
+                            const val2 = state.timeline[currentTimelineMode][targetTime] || content.innerText;
+
+                            state.timeline[currentTimelineMode][draggedTimeSlot] = val2;
+                            state.timeline[currentTimelineMode][targetTime] = val1;
+                            localStorage.setItem('time_app_data', JSON.stringify(state));
+                            initTimeline();
+                        }
+                    });
 
                     slot.appendChild(label);
                     slot.appendChild(content);
@@ -749,10 +816,11 @@
                 for (let min = 0; min < 60; min += 15) {
                     const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
                     const currentVal = timelineData[timeStr];
+                    const isFixed = fixedRoutines.common[timeStr] || (currentTimelineMode === 'weekday' && fixedRoutines.weekday[timeStr]);
 
                     const isDefaultSleep = (hour >= 23 || hour < 6 || (hour === 6 && min < 30)) && (!currentVal || currentVal === '😴 睡眠時間');
                     const isDefaultWork = currentTimelineMode === 'weekday' && ((hour >= 8 && hour < 12) || (hour >= 13 && hour < 17)) && (!currentVal || currentVal === '💼 工作時間');
-                    const isEmptySlot = !currentVal || currentVal.trim() === '';
+                    const isEmptySlot = (!currentVal || currentVal.trim() === '') && !isFixed;
 
                     if ((isEmptySlot || isDefaultSleep || isDefaultWork) && poolIndex < pool.length) {
                         timelineData[timeStr] = pool[poolIndex];
@@ -851,7 +919,7 @@
             reader.readAsText(file);
         }
 
-        // Render Functions
+        // Render Functions & Drag/Drop for Plans
         function renderAll() {
             // Render Quick Notes
             const qList = document.getElementById('quick-list');
@@ -908,12 +976,42 @@
 
         function renderPlans() {
             const pList = document.getElementById('plan-list');
-            pList.innerHTML = state.plans[currentPlanLevel].map(p => `
-                <div class="task-item">
+            pList.innerHTML = '';
+
+            state.plans[currentPlanLevel].forEach((p, index) => {
+                const item = document.createElement('div');
+                item.className = 'task-item';
+                item.draggable = true;
+                item.dataset.index = index;
+
+                item.innerHTML = `
+                    <span class="drag-handle">⋮⋮</span>
                     <span class="task-title">${p.text}</span>
                     <button class="btn-sm" style="background:var(--accent-red)" onclick="deleteItem('plans', ${p.id}, '${currentPlanLevel}')">✕</button>
-                </div>
-            `).join('');
+                `;
+
+                item.addEventListener('dragstart', (e) => {
+                    item.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', index);
+                });
+
+                item.addEventListener('dragend', () => item.classList.remove('dragging'));
+
+                item.addEventListener('dragover', (e) => e.preventDefault());
+
+                item.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                    const toIndex = index;
+                    if (fromIndex !== toIndex) {
+                        const movedItem = state.plans[currentPlanLevel].splice(fromIndex, 1)[0];
+                        state.plans[currentPlanLevel].splice(toIndex, 0, movedItem);
+                        saveData();
+                    }
+                });
+
+                pList.appendChild(item);
+            });
         }
 
         // Initialize App
