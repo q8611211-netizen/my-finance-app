@@ -1,1022 +1,1108 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>艾森豪時間管理</title>
-    
-    <!-- iOS PWA Meta Tags -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="時間管理">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23007AFF'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>⏱️</text></svg>">
+<!-- iOS PWA Meta Tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="時間管理">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23007AFF'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>⏱️</text></svg>">
 
-    <style>
+<!-- Firebase SDK (v10.8.0) -->
+<script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js)"></script>
+<script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js)"></script>
+
+<style>
+    :root {
+        --bg-primary: #F2F2F7;
+        --bg-secondary: #FFFFFF;
+        --text-primary: #000000;
+        --text-secondary: #8E8E93;
+        --accent-blue: #007AFF;
+        --accent-red: #FF3B30;
+        --accent-orange: #FF9500;
+        --accent-green: #34C759;
+        --accent-purple: #AF52DE;
+        --border-color: #C6C6C8;
+        --card-radius: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
         :root {
-            --bg-primary: #F2F2F7;
-            --bg-secondary: #FFFFFF;
-            --text-primary: #000000;
+            --bg-primary: #000000;
+            --bg-secondary: #1C1C1E;
+            --text-primary: #FFFFFF;
             --text-secondary: #8E8E93;
-            --accent-blue: #007AFF;
-            --accent-red: #FF3B30;
-            --accent-orange: #FF9500;
-            --accent-green: #34C759;
-            --accent-purple: #AF52DE;
-            --border-color: #C6C6C8;
-            --card-radius: 12px;
+            --border-color: #38383A;
         }
+    }
 
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --bg-primary: #000000;
-                --bg-secondary: #1C1C1E;
-                --text-primary: #FFFFFF;
-                --text-secondary: #8E8E93;
-                --border-color: #38383A;
-            }
-        }
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            user-select: none;
-        }
+    body {
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: calc(env(safe-area-inset-bottom) + 65px);
+        max-width: 600px;
+        margin: 0 auto;
+    }
 
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: calc(env(safe-area-inset-bottom) + 65px);
-            max-width: 600px;
-            margin: 0 auto;
-        }
+    .tab-bar {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 600px;
+        background: var(--bg-secondary);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 0.5px solid var(--border-color);
+        display: flex;
+        justify-content: space-around;
+        padding-top: 8px;
+        padding-bottom: env(safe-area-inset-bottom);
+        z-index: 1000;
+    }
 
-        /* Nav Tabs */
-        .tab-bar {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            max-width: 600px;
-            background: var(--bg-secondary);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 0.5px solid var(--border-color);
-            display: flex;
-            justify-content: space-around;
-            padding-top: 8px;
-            padding-bottom: env(safe-area-inset-bottom);
-            z-index: 1000;
-        }
+    .tab-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 10px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        width: 16%;
+    }
 
-        .tab-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-size: 10px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            width: 20%;
-        }
+    .tab-item.active {
+        color: var(--accent-blue);
+    }
 
-        .tab-item.active {
-            color: var(--accent-blue);
-        }
+    .tab-icon {
+        font-size: 20px;
+        margin-bottom: 2px;
+    }
 
-        .tab-icon {
-            font-size: 20px;
-            margin-bottom: 2px;
-        }
+    .view {
+        display: none;
+        padding: 16px;
+        animation: fadeIn 0.2s ease-in-out;
+    }
 
-        /* Views */
-        .view {
-            display: none;
-            padding: 16px;
-            animation: fadeIn 0.2s ease-in-out;
-        }
+    .view.active {
+        display: block;
+    }
 
-        .view.active {
-            display: block;
-        }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    .header {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        letter-spacing: -0.5px;
+    }
 
-        .header {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            letter-spacing: -0.5px;
-        }
+    .card {
+        background: var(--bg-secondary);
+        border-radius: var(--card-radius);
+        padding: 14px;
+        margin-bottom: 16px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
 
-        /* Card System */
-        .card {
-            background: var(--bg-secondary);
-            border-radius: var(--card-radius);
-            padding: 14px;
-            margin-bottom: 16px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
+    .input-group {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
 
-        .input-group {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
+    input[type="text"], input[type="password"], textarea, select {
+        flex: 1;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-size: 15px;
+        outline: none;
+    }
 
-        input[type="text"], select {
-            flex: 1;
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-size: 15px;
-            outline: none;
-        }
+    textarea {
+        font-family: monospace;
+        font-size: 11px;
+        resize: vertical;
+    }
 
-        button {
-            padding: 10px 16px;
-            border-radius: 8px;
-            border: none;
-            background: var(--accent-blue);
-            color: white;
-            font-weight: 600;
-            font-size: 15px;
-            cursor: pointer;
-        }
+    button {
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        background: var(--accent-blue);
+        color: white;
+        font-weight: 600;
+        font-size: 15px;
+        cursor: pointer;
+    }
 
-        .btn-danger {
-            background: var(--accent-red);
-        }
+    .btn-danger { background: var(--accent-red); }
+    .btn-secondary { background: var(--text-secondary); }
 
-        .btn-secondary {
-            background: var(--text-secondary);
-        }
+    .task-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px;
+        background: var(--bg-secondary);
+        border-bottom: 0.5px solid var(--border-color);
+    }
 
-        /* Task Lists & Draggable Items */
-        .task-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px;
-            background: var(--bg-secondary);
-            border-bottom: 0.5px solid var(--border-color);
-            cursor: grab;
-            transition: background 0.15s ease;
-        }
+    .task-item:last-child { border-bottom: none; }
+    .task-title { font-size: 15px; flex: 1; word-break: break-word; }
+    .task-actions { display: flex; gap: 6px; }
+    .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 6px; }
 
-        .task-item:active {
-            cursor: grabbing;
-        }
+    .routine-card-matrix {
+        background: var(--bg-secondary);
+        border-radius: var(--card-radius);
+        padding: 12px;
+        margin-bottom: 16px;
+        border-left: 4px solid var(--accent-purple);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
 
-        .task-item.dragging {
-            opacity: 0.4;
-            background: var(--bg-primary);
-        }
+    .matrix-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
 
-        .drag-handle {
-            margin-right: 8px;
-            color: var(--text-secondary);
-            font-size: 14px;
-            cursor: grab;
-        }
+    .matrix-box {
+        background: var(--bg-secondary);
+        border-radius: var(--card-radius);
+        padding: 10px;
+        min-height: 160px;
+        border-top: 4px solid;
+    }
 
-        .task-title {
-            font-size: 15px;
-            flex: 1;
-        }
+    .m-q1 { border-color: var(--accent-red); }
+    .m-q2 { border-color: var(--accent-orange); }
+    .m-q3 { border-color: var(--accent-blue); }
+    .m-q4 { border-color: var(--text-secondary); }
 
-        .task-actions {
-            display: flex;
-            gap: 6px;
-        }
+    .matrix-title {
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+    }
 
-        .btn-sm {
-            padding: 6px 10px;
-            font-size: 12px;
-            border-radius: 6px;
-        }
+    .timeline-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
 
-        /* Eisenhower Matrix Layout */
-        .routine-card-matrix {
-            background: var(--bg-secondary);
-            border-radius: var(--card-radius);
-            padding: 12px;
-            margin-bottom: 16px;
-            border-left: 4px solid var(--accent-purple);
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
+    .control-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+    }
 
-        .matrix-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
+    .mode-toggle {
+        display: flex;
+        background: var(--bg-primary);
+        border-radius: 8px;
+        padding: 2px;
+    }
 
-        .matrix-box {
-            background: var(--bg-secondary);
-            border-radius: var(--card-radius);
-            padding: 10px;
-            min-height: 160px;
-            border-top: 4px solid;
-        }
+    .mode-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-secondary);
+        border: none;
+    }
 
-        .m-q1 { border-color: var(--accent-red); }
-        .m-q2 { border-color: var(--accent-orange); }
-        .m-q3 { border-color: var(--accent-blue); }
-        .m-q4 { border-color: var(--text-secondary); }
+    .mode-btn.active {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
 
-        .matrix-title {
-            font-size: 12px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-        }
+    .info-box {
+        background: var(--bg-secondary);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+        line-height: 1.4;
+        border-left: 3px solid var(--accent-blue);
+    }
 
-        /* Timeline Schedule */
-        .timeline-controls {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
+    .timeline { display: flex; flex-direction: column; }
 
-        .control-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 8px;
-        }
+    .time-slot {
+        display: flex;
+        align-items: center;
+        min-height: 38px;
+        border-bottom: 0.5px solid var(--border-color);
+        font-size: 12px;
+        padding: 2px 0;
+    }
 
-        .mode-toggle {
-            display: flex;
-            background: var(--bg-primary);
-            border-radius: 8px;
-            padding: 2px;
-        }
+    .time-slot.drag-over {
+        background: rgba(0, 122, 255, 0.2) !important;
+        border: 1px dashed var(--accent-blue);
+    }
 
-        .mode-btn {
-            padding: 6px 12px;
-            font-size: 13px;
-            border-radius: 6px;
-            background: transparent;
-            color: var(--text-secondary);
-            border: none;
-        }
+    .time-label {
+        width: 65px;
+        color: var(--text-secondary);
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
 
-        .mode-btn.active {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-        }
+    .drag-handle { margin-right: 4px; color: var(--text-secondary); font-size: 12px; cursor: grab; }
 
-        .info-box {
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 12px;
-            line-height: 1.4;
-            border-left: 3px solid var(--accent-blue);
-        }
+    .time-content {
+        flex: 1;
+        min-height: 34px;
+        display: flex;
+        align-items: center;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: transparent;
+        word-break: break-all;
+        outline: none;
+    }
 
-        .timeline {
-            display: flex;
-            flex-direction: column;
-        }
+    .time-slot.sleep { background: rgba(142, 142, 147, 0.08); }
+    .time-slot.routine-fixed { background: rgba(175, 82, 222, 0.08); }
+    .time-slot.work-time { background: rgba(0, 122, 255, 0.05); }
 
-        .time-slot {
-            display: flex;
-            align-items: center;
-            min-height: 38px;
-            border-bottom: 0.5px solid var(--border-color);
-            font-size: 12px;
-            padding: 2px 0;
-            transition: background 0.15s ease;
-        }
+    .sub-tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
+    .sub-tab {
+        padding: 6px 12px;
+        border-radius: 15px;
+        background: var(--bg-secondary);
+        font-size: 13px;
+        white-space: nowrap;
+        color: var(--text-secondary);
+        cursor: pointer;
+    }
 
-        .time-slot.drag-over {
-            background: rgba(0, 122, 255, 0.2) !important;
-            border: 1px dashed var(--accent-blue);
-        }
+    .sub-tab.active { background: var(--accent-blue); color: white; }
 
-        .time-label {
-            width: 65px;
-            color: var(--text-secondary);
-            font-variant-numeric: tabular-nums;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
+    .cal-btn-large {
+        width: 100%;
+        padding: 14px;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        text-decoration: none;
+        color: white;
+    }
 
-        .time-content {
-            flex: 1;
-            min-height: 34px;
-            display: flex;
-            align-items: center;
-            padding: 4px 8px;
-            border-radius: 4px;
-            background: transparent;
-            word-break: break-all;
-            outline: none;
-        }
+    /* Sync Status Pill */
+    .sync-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        background: rgba(142, 142, 147, 0.15);
+        color: var(--text-secondary);
+        margin-bottom: 10px;
+    }
 
-        .time-slot.sleep {
-            background: rgba(142, 142, 147, 0.08);
-        }
+    .sync-badge.active {
+        background: rgba(52, 199, 89, 0.15);
+        color: var(--accent-green);
+    }
 
-        .time-slot.routine-fixed {
-            background: rgba(175, 82, 222, 0.08);
-        }
+    .sync-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--text-secondary);
+    }
 
-        .time-slot.work-time {
-            background: rgba(0, 122, 255, 0.05);
-        }
+    .sync-badge.active .sync-dot {
+        background: var(--accent-green);
+    }
+</style>
+<!-- 1. 隨記與例行事項 -->
+<div id="view-quick" class="view active">
+    <div class="header">隨記與例行</div>
+    <div class="card">
+        <div class="input-group">
+            <input type="text" id="quick-input" placeholder="閃念/隨記靈感...">
+            <button onclick="addQuickNote()">記錄</button>
+        </div>
+        <div id="quick-list"></div>
+    </div>
 
-        /* Planning Sub-tabs */
-        .sub-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-            overflow-x: auto;
-        }
+    <div class="header" style="font-size: 20px;">例行事項</div>
+    <div class="card">
+        <div class="input-group">
+            <input type="text" id="routine-input" placeholder="新增每日/每週例行...">
+            <button onclick="addRoutine()">新增</button>
+        </div>
+        <div id="routine-list"></div>
+    </div>
+</div>
 
-        .sub-tab {
-            padding: 6px 12px;
-            border-radius: 15px;
-            background: var(--bg-secondary);
-            font-size: 13px;
-            white-space: nowrap;
-            color: var(--text-secondary);
-            cursor: pointer;
-        }
+<!-- 2. 艾森豪矩陣 -->
+<div id="view-matrix" class="view">
+    <div class="header">艾森豪矩陣</div>
+    
+    <div class="routine-card-matrix">
+        <div class="matrix-title" style="color: var(--accent-purple);">🔄 固定例行事項</div>
+        <div id="matrix-routine-list"></div>
+    </div>
 
-        .sub-tab.active {
-            background: var(--accent-blue);
-            color: white;
-        }
+    <div class="matrix-grid">
+        <div class="matrix-box m-q1">
+            <div class="matrix-title">重要且緊急 (Q1)</div>
+            <div id="q1-list"></div>
+        </div>
+        <div class="matrix-box m-q2">
+            <div class="matrix-title">重要不緊急 (Q2)</div>
+            <div id="q2-list"></div>
+        </div>
+        <div class="matrix-box m-q3">
+            <div class="matrix-title">不重要但緊急 (Q3)</div>
+            <div id="q3-list"></div>
+        </div>
+        <div class="matrix-box m-q4">
+            <div class="matrix-title">不重要不緊急 (Q4)</div>
+            <div id="q4-list"></div>
+        </div>
+    </div>
+</div>
 
-        .cal-btn-large {
-            width: 100%;
-            padding: 14px;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 10px;
-            text-decoration: none;
-            color: white;
-        }
-    </style>
-</head>
-<body>
+<!-- 3. 多維度計畫 -->
+<div id="view-plan" class="view">
+    <div class="header">長短期計畫</div>
+    <div class="sub-tabs">
+        <div class="sub-tab active" onclick="switchPlanTab('year', this)">年</div>
+        <div class="sub-tab" onclick="switchPlanTab('quarter', this)">季</div>
+        <div class="sub-tab" onclick="switchPlanTab('month', this)">月</div>
+        <div class="sub-tab" onclick="switchPlanTab('week', this)">週</div>
+        <div class="sub-tab" onclick="switchPlanTab('day', this)">日</div>
+    </div>
+    <div class="card">
+        <div class="input-group">
+            <input type="text" id="plan-input" placeholder="新增目標/計畫...">
+            <button onclick="addPlan()">目標</button>
+        </div>
+        <div id="plan-list"></div>
+    </div>
+</div>
 
-    <!-- 1. 隨記與例行事項 -->
-    <div id="view-quick" class="view active">
-        <div class="header">隨記與例行</div>
-        <div class="card">
+<!-- 4. 今日時間軸 -->
+<div id="view-timeline" class="view">
+    <div class="header">今日時間軸</div>
+    
+    <div class="timeline-controls">
+        <div class="control-row">
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="btn-weekday" onclick="switchTimelineMode('weekday')">💼 工作日</button>
+                <button class="mode-btn" id="btn-weekend" onclick="switchTimelineMode('weekend')">☕ 假日</button>
+            </div>
+            <button class="btn-sm" style="background: var(--accent-purple);" onclick="autoFillSchedule()">⚡ 自動帶入事項</button>
+        </div>
+        <div class="control-row">
+            <div style="display: flex; gap: 6px;">
+                <button class="btn-sm btn-secondary" onclick="undoTimeline()">↩️ 上一步</button>
+                <button class="btn-sm btn-danger" onclick="resetTimeline()">🔄 重置時間軸</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="info-box">
+        📌 <strong>使用說明：</strong><br>
+        1. <strong>拖拉排序：</strong>長按左側圖示可拖拉對調時間軸順序。<br>
+        2. <strong>固定作息：</strong>預設已代入 06:30 盥洗、07:00 冥想、07:15 出發上班、12:45 午睡、17:15 下班、22:30 洗澡、22:45 看書。
+    </div>
+
+    <div class="card" style="padding: 8px 12px;">
+        <div class="timeline" id="timeline-container"></div>
+    </div>
+</div>
+
+<!-- 5. Google 日曆檢視 -->
+<div id="view-calendar" class="view">
+    <div class="header">Google 日曆</div>
+    
+    <div class="card">
+        <h3 style="font-size: 16px; margin-bottom: 8px;">📅 快速前往 Google 日曆</h3>
+        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
+            點擊下方按鈕直接開啟 Google Calendar：
+        </p>
+
+        <a href="[https://calendar.google.com/](https://calendar.google.com/)" target="_blank" class="cal-btn-large" style="background: var(--accent-blue);">
+            📅 開啟 Google 日曆網頁版
+        </a>
+        
+        <a href="googlecalendar://" class="cal-btn-large" style="background: var(--accent-green);">
+            📱 開啟 Google Calendar App
+        </a>
+    </div>
+
+    <div class="card">
+        <h3 style="font-size: 15px; margin-bottom: 8px;">💡 公開日曆嵌入設定</h3>
+        <div class="input-group" style="margin-bottom: 8px;">
+            <input type="text" id="gcal-url-input" placeholder="[https://calendar.google.com/calendar/embed?src=](https://calendar.google.com/calendar/embed?src=)...">
+            <button onclick="saveGCalUrl()">載入</button>
+        </div>
+    </div>
+
+    <div id="gcal-container" class="card" style="padding: 0; overflow: hidden; display: none;">
+        <iframe id="gcal-iframe" style="width:100%; height:450px; border:none;" src="" frameborder="0" scrolling="no"></iframe>
+    </div>
+</div>
+
+<!-- 6. 設定與雲端同步 -->
+<div id="view-settings" class="view">
+    <div class="header">系統設定與雲端同步</div>
+    
+    <!-- 雲端同步狀態卡片 -->
+    <div class="card">
+        <h3 style="font-size: 16px; margin-bottom: 8px;">☁️ Firebase 雲端自動同步</h3>
+        <div id="sync-status" class="sync-badge">
+            <span class="sync-dot"></span>
+            <span id="sync-text">未設定雲端同步 (離線單機版)</span>
+        </div>
+
+        <div style="margin-top: 10px;">
+            <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">1. 貼上 Firebase Config (JSON 或物件語法)</label>
+            <textarea id="firebase-config-input" rows="4" placeholder='{ "apiKey": "...", "authDomain": "...", "databaseURL": "...", "projectId": "..." }'></textarea>
+        </div>
+
+        <div style="margin-top: 8px;">
+            <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">2. 設定同步金鑰 / 帳號名稱 (跨裝置請填寫相同金鑰)</label>
             <div class="input-group">
-                <input type="text" id="quick-input" placeholder="閃念/隨記靈感...">
-                <button onclick="addQuickNote()">記錄</button>
-            </div>
-            <div id="quick-list"></div>
-        </div>
-
-        <div class="header" style="font-size: 20px;">例行事項</div>
-        <div class="card">
-            <div class="input-group">
-                <input type="text" id="routine-input" placeholder="新增每日/每週例行...">
-                <button onclick="addRoutine()">新增</button>
-            </div>
-            <div id="routine-list"></div>
-        </div>
-    </div>
-
-    <!-- 2. 艾森豪矩陣 -->
-    <div id="view-matrix" class="view">
-        <div class="header">艾森豪矩陣</div>
-        
-        <div class="routine-card-matrix">
-            <div class="matrix-title" style="color: var(--accent-purple);">🔄 固定例行事項</div>
-            <div id="matrix-routine-list"></div>
-        </div>
-
-        <div class="matrix-grid">
-            <div class="matrix-box m-q1">
-                <div class="matrix-title">重要且緊急 (Q1)</div>
-                <div id="q1-list"></div>
-            </div>
-            <div class="matrix-box m-q2">
-                <div class="matrix-title">重要不緊急 (Q2)</div>
-                <div id="q2-list"></div>
-            </div>
-            <div class="matrix-box m-q3">
-                <div class="matrix-title">不重要但緊急 (Q3)</div>
-                <div id="q3-list"></div>
-            </div>
-            <div class="matrix-box m-q4">
-                <div class="matrix-title">不重要不緊急 (Q4)</div>
-                <div id="q4-list"></div>
+                <input type="password" id="sync-key-input" placeholder="例如：my-secret-key-123">
+                <button onclick="saveFirebaseSettings()">開啓同步</button>
             </div>
         </div>
     </div>
 
-    <!-- 3. 多維度計畫 -->
-    <div id="view-plan" class="view">
-        <div class="header">長短期計畫</div>
-        <div class="sub-tabs">
-            <div class="sub-tab active" onclick="switchPlanTab('year', this)">年</div>
-            <div class="sub-tab" onclick="switchPlanTab('quarter', this)">季</div>
-            <div class="sub-tab" onclick="switchPlanTab('month', this)">月</div>
-            <div class="sub-tab" onclick="switchPlanTab('week', this)">週</div>
-            <div class="sub-tab" onclick="switchPlanTab('day', this)">日</div>
+    <!-- 本機備份 -->
+    <div class="card">
+        <h3 style="font-size: 16px; margin-bottom: 8px;">📲 本機檔案備份與匯入</h3>
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+            <button onclick="exportData('json')" style="flex: 1;">匯出備份 (JSON)</button>
+            <button onclick="exportData('csv')" style="flex: 1; background: var(--accent-green);">匯出報表 (CSV)</button>
         </div>
-        <div class="card">
-            <div class="input-group">
-                <input type="text" id="plan-input" placeholder="新增目標/計畫...">
-                <button onclick="addPlan()">目標</button>
-            </div>
-            <div id="plan-list"></div>
-        </div>
+        <input type="file" id="import-file-input" accept=".json" onchange="importJSON(event)" style="width: 100%;">
     </div>
+</div>
 
-    <!-- 4. 今日 15分鐘 時間軸 -->
-    <div id="view-timeline" class="view">
-        <div class="header">今日時間軸</div>
-        
-        <div class="timeline-controls">
-            <div class="control-row">
-                <div class="mode-toggle">
-                    <button class="mode-btn active" id="btn-weekday" onclick="switchTimelineMode('weekday')">💼 工作日</button>
-                    <button class="mode-btn" id="btn-weekend" onclick="switchTimelineMode('weekend')">☕ 假日</button>
-                </div>
-                <button class="btn-sm" style="background: var(--accent-purple);" onclick="autoFillSchedule()">⚡ 自動帶入事項</button>
-            </div>
-            <div class="control-row">
-                <div style="display: flex; gap: 6px;">
-                    <button class="btn-sm btn-secondary" onclick="undoTimeline()">↩️ 上一步</button>
-                    <button class="btn-sm btn-danger" onclick="resetTimeline()">🔄 重置時間軸</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="info-box">
-            📌 <strong>使用說明：</strong><br>
-            1. <strong>拖拉排序：</strong>長按左側圖示可拖拉對調時間軸與計畫順序。<br>
-            2. <strong>固定作息：</strong>已自動代入 06:30 盥洗、07:00 冥想、07:15 出發上班、12:45 午睡、17:15 下班、22:30 洗澡、22:45 看書等設定。
-        </div>
-
-        <div class="card" style="padding: 8px 12px;">
-            <div class="timeline" id="timeline-container"></div>
-        </div>
+<!-- Tab Bar -->
+<div class="tab-bar">
+    <div class="tab-item active" onclick="switchView('quick', this)">
+        <div class="tab-icon">📝</div>
+        <span>隨記</span>
     </div>
-
-    <!-- 5. Google 日曆檢視 -->
-    <div id="view-calendar" class="view">
-        <div class="header">Google 日曆</div>
-        
-        <div class="card">
-            <h3 style="font-size: 16px; margin-bottom: 8px;">📅 快速前往 Google 日曆</h3>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
-                點擊下方按鈕直接開啟 Google Calendar：
-            </p>
-
-            <a href="https://calendar.google.com/" target="_blank" class="cal-btn-large" style="background: var(--accent-blue);">
-                📅 開啟 Google 日曆網頁版
-            </a>
-            
-            <a href="googlecalendar://" class="cal-btn-large" style="background: var(--accent-green);">
-                📱 開啟 Google Calendar App
-            </a>
-        </div>
-
-        <div class="card">
-            <h3 style="font-size: 15px; margin-bottom: 8px;">💡 公開日曆嵌入設定</h3>
-            <div class="input-group" style="margin-bottom: 8px;">
-                <input type="text" id="gcal-url-input" placeholder="https://calendar.google.com/calendar/embed?src=...">
-                <button onclick="saveGCalUrl()">載入</button>
-            </div>
-        </div>
-
-        <div id="gcal-container" class="card" style="padding: 0; overflow: hidden; display: none;">
-            <iframe id="gcal-iframe" style="width:100%; height:450px; border:none;" src="" frameborder="0" scrolling="no"></iframe>
-        </div>
+    <div class="tab-item" onclick="switchView('matrix', this)">
+        <div class="tab-icon">🎯</div>
+        <span>矩陣</span>
     </div>
-
-    <!-- 6. 設定與跨裝置同步 -->
-    <div id="view-settings" class="view">
-        <div class="header">系統設定與同步</div>
-        
-        <div class="card">
-            <h3 style="font-size: 16px; margin-bottom: 8px;">📲 跨裝置資料同步 (備份與還原)</h3>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
-                要將資料同步至另一台裝置（例如 iPhone 到 iPad/電腦），請匯出 JSON 備份檔，並於另一台裝置選取匯入即可完整複製。
-            </p>
-            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                <button onclick="exportData('json')" style="flex: 1;">匯出備份 (JSON)</button>
-                <button onclick="exportData('csv')" style="flex: 1; background: var(--accent-green);">匯出報表 (CSV)</button>
-            </div>
-            <input type="file" id="import-file-input" accept=".json" onchange="importJSON(event)" style="width: 100%;">
-        </div>
+    <div class="tab-item" onclick="switchView('plan', this)">
+        <div class="tab-icon">📅</div>
+        <span>計畫</span>
     </div>
-
-    <!-- Tab Bar -->
-    <div class="tab-bar">
-        <div class="tab-item active" onclick="switchView('quick', this)">
-            <div class="tab-icon">📝</div>
-            <span>隨記</span>
-        </div>
-        <div class="tab-item" onclick="switchView('matrix', this)">
-            <div class="tab-icon">🎯</div>
-            <span>矩陣</span>
-        </div>
-        <div class="tab-item" onclick="switchView('plan', this)">
-            <div class="tab-icon">📅</div>
-            <span>計畫</span>
-        </div>
-        <div class="tab-item" onclick="switchView('timeline', this)">
-            <div class="tab-icon">⏳</div>
-            <span>時間軸</span>
-        </div>
-        <div class="tab-item" onclick="switchView('calendar', this)">
-            <div class="tab-icon">📆</div>
-            <span>日曆</span>
-        </div>
-        <div class="tab-item" onclick="switchView('settings', this)">
-            <div class="tab-icon">⚙️</div>
-            <span>設定</span>
-        </div>
+    <div class="tab-item" onclick="switchView('timeline', this)">
+        <div class="tab-icon">⏳</div>
+        <span>時間軸</span>
     </div>
+    <div class="tab-item" onclick="switchView('calendar', this)">
+        <div class="tab-icon">📆</div>
+        <span>日曆</span>
+    </div>
+    <div class="tab-item" onclick="switchView('settings', this)">
+        <div class="tab-icon">⚙️</div>
+        <span>設定</span>
+    </div>
+</div>
 
-    <script>
-        // State Management
-        let state = JSON.parse(localStorage.getItem('time_app_data')) || {
-            quickNotes: [],
-            routines: [],
-            matrix: { q1: [], q2: [], q3: [], q4: [] },
-            plans: { year: [], quarter: [], month: [], week: [], day: [] },
-            timeline: {
-                weekday: {},
-                weekend: {}
-            },
-            gcalUrl: ""
-        };
+<script>
+    // 全局狀態管理
+    let state = JSON.parse(localStorage.getItem('time_app_data')) || {
+        quickNotes: [],
+        routines: [],
+        matrix: { q1: [], q2: [], q3: [], q4: [] },
+        plans: { year: [], quarter: [], month: [], week: [], day: [] },
+        timeline: {
+            weekday: {},
+            weekend: {}
+        },
+        gcalUrl: "",
+        firebaseConfig: "",
+        syncKey: ""
+    };
 
-        if (!state.timeline.weekday && !state.timeline.weekend) {
-            state.timeline = { weekday: state.timeline || {}, weekend: {} };
+    if (!state.timeline.weekday && !state.timeline.weekend) {
+        state.timeline = { weekday: state.timeline || {}, weekend: {} };
+    }
+
+    let dbRef = null;
+    let isRemoteUpdating = false;
+    let currentPlanLevel = 'year';
+    let currentTimelineMode = 'weekday';
+    let timelineHistory = [];
+    let draggedTimeSlot = null;
+
+    const fixedRoutines = {
+        common: {
+            "06:30": "🧼 盥洗",
+            "06:45": "📋 準備",
+            "07:00": "🧘 冥想",
+            "22:30": "🚿 洗澡",
+            "22:45": "📖 看書"
+        },
+        weekday: {
+            "07:15": "🚗 出發上班",
+            "12:45": "😴 午睡",
+            "17:15": "🏢 下班"
+        }
+    };
+
+    // 初始化 Firebase 同步機制
+    function initFirebase() {
+        if (!state.firebaseConfig || !state.syncKey) {
+            updateSyncBadge(false, '未設定雲端同步 (離線單機版)');
+            return;
         }
 
-        let currentPlanLevel = 'year';
-        let currentTimelineMode = 'weekday';
-        let timelineHistory = [];
-        let draggedTimeSlot = null;
-
-        // 固定時間行程對照表
-        const fixedRoutines = {
-            common: {
-                "06:30": "🧼 盥洗",
-                "06:45": "📋 準備",
-                "07:00": "🧘 冥想",
-                "22:30": "🚿 洗澡",
-                "22:45": "📖 看書"
-            },
-            weekday: {
-                "07:15": "🚗 出發上班",
-                "12:45": "😴 午睡",
-                "17:15": "🏢 下班"
-            }
-        };
-
-        function saveTimelineState() {
-            timelineHistory.push(JSON.stringify(state.timeline[currentTimelineMode]));
-            if (timelineHistory.length > 15) timelineHistory.shift();
-        }
-
-        function undoTimeline() {
-            if (timelineHistory.length === 0) {
-                alert('已無可復原的上一步紀錄。');
-                return;
-            }
-            const previousState = timelineHistory.pop();
-            state.timeline[currentTimelineMode] = JSON.parse(previousState);
-            localStorage.setItem('time_app_data', JSON.stringify(state));
-            initTimeline();
-        }
-
-        function resetTimeline() {
-            if (confirm('確定要重置目前的今日時間軸嗎？這將清空此模式下的所有填寫事項。')) {
-                saveTimelineState();
-                state.timeline[currentTimelineMode] = {};
-                localStorage.setItem('time_app_data', JSON.stringify(state));
-                initTimeline();
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem('time_app_data', JSON.stringify(state));
-            renderAll();
-        }
-
-        // View Switching
-        function switchView(viewId, el) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-            document.getElementById(`view-${viewId}`).classList.add('active');
-            el.classList.add('active');
-            
-            if (viewId === 'calendar') {
-                loadGCalIframe();
-            }
-        }
-
-        function switchPlanTab(level, el) {
-            currentPlanLevel = level;
-            document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
-            if (el) el.classList.add('active');
-            renderPlans();
-        }
-
-        function switchTimelineMode(mode) {
-            currentTimelineMode = mode;
-            document.getElementById('btn-weekday').classList.toggle('active', mode === 'weekday');
-            document.getElementById('btn-weekend').classList.toggle('active', mode === 'weekend');
-            initTimeline();
-        }
-
-        // Quick Notes & Routines
-        function addQuickNote() {
-            const input = document.getElementById('quick-input');
-            if (!input.value.trim()) return;
-            state.quickNotes.push({ id: Date.now(), text: input.value });
-            input.value = '';
-            saveData();
-        }
-
-        function addRoutine() {
-            const input = document.getElementById('routine-input');
-            if (!input.value.trim()) return;
-            state.routines.push({ id: Date.now(), text: input.value });
-            input.value = '';
-            saveData();
-        }
-
-        function dispatchQuickNote(id, targetQ) {
-            if (!targetQ) return;
-            const index = state.quickNotes.findIndex(n => n.id === id);
-            if (index > -1) {
-                const note = state.quickNotes.splice(index, 1)[0];
-                state.matrix[targetQ].push(note.text);
-                saveData();
-            }
-        }
-
-        function deleteItem(category, id, subKey = null) {
-            if (subKey) {
-                state[category][subKey] = state[category][subKey].filter(item => item.id !== id && item !== id);
+        try {
+            let configObj;
+            if (typeof state.firebaseConfig === 'string') {
+                // 相容帶有 JS 物件語法或 JSON 的輸入
+                let formatted = state.firebaseConfig.trim();
+                if (!formatted.startsWith('{')) formatted = '{' + formatted + '}';
+                configObj = eval('(' + formatted + ')');
             } else {
-                state[category] = state[category].filter(item => item.id !== id);
+                configObj = state.firebaseConfig;
             }
-            saveData();
-        }
 
-        // Plans Drag and Drop
-        function addPlan() {
-            const input = document.getElementById('plan-input');
-            if (!input.value.trim()) return;
-            state.plans[currentPlanLevel].push({ id: Date.now(), text: input.value, done: false });
-            input.value = '';
-            saveData();
-        }
+            if (!firebase.apps.length) {
+                firebase.initializeApp(configObj);
+            }
 
-        // Timeline Setup with Drag Swap
-        function initTimeline() {
-            const container = document.getElementById('timeline-container');
-            container.innerHTML = '';
-            const activeData = state.timeline[currentTimelineMode] || {};
+            const sanitizedKey = state.syncKey.replace(/[^a-zA-Z0-9_-]/g, '_');
+            dbRef = firebase.database().ref('users/' + sanitizedKey);
 
-            for (let hour = 0; hour < 24; hour++) {
-                for (let min = 0; min < 60; min += 15) {
-                    const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                    const isSleepDefault = (hour >= 23 || hour < 6) || (hour === 6 && min < 30);
-                    const isWorkDefault = currentTimelineMode === 'weekday' && 
-                        ((hour >= 8 && hour < 12) || (hour >= 13 && hour < 17));
-
-                    // Check fixed routines
-                    let fixedTask = fixedRoutines.common[timeStr] || (currentTimelineMode === 'weekday' ? fixedRoutines.weekday[timeStr] : null);
-
-                    const slot = document.createElement('div');
-                    let classNames = 'time-slot';
-                    if (fixedTask) classNames += ' routine-fixed';
-                    else if (isSleepDefault) classNames += ' sleep';
-                    else if (isWorkDefault) classNames += ' work-time';
-                    slot.className = classNames;
-                    slot.draggable = true;
-                    slot.dataset.time = timeStr;
-
-                    const label = document.createElement('div');
-                    label.className = 'time-label';
-                    label.innerHTML = `<span class="drag-handle">⋮⋮</span>${timeStr}`;
-
-                    const content = document.createElement('div');
-                    content.className = 'time-content';
-                    content.contentEditable = true;
-
-                    if (activeData[timeStr] !== undefined) {
-                        content.innerText = activeData[timeStr];
-                    } else if (fixedTask) {
-                        content.innerText = fixedTask;
-                    } else if (isSleepDefault) {
-                        content.innerText = '😴 睡眠時間';
-                    } else if (isWorkDefault) {
-                        content.innerText = '💼 工作時間';
-                    } else {
-                        content.innerText = '';
-                    }
-
-                    content.onfocus = () => saveTimelineState();
-                    content.onblur = (e) => {
-                        let text = e.target.innerText.trim();
-                        state.timeline[currentTimelineMode][timeStr] = text;
-                        localStorage.setItem('time_app_data', JSON.stringify(state));
-                    };
-
-                    // Timeline Drag Events
-                    slot.addEventListener('dragstart', (e) => {
-                        draggedTimeSlot = timeStr;
-                        e.dataTransfer.setData('text/plain', timeStr);
-                    });
-
-                    slot.addEventListener('dragover', (e) => {
-                        e.preventDefault();
-                        slot.classList.add('drag-over');
-                    });
-
-                    slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
-
-                    slot.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        slot.classList.remove('drag-over');
-                        const targetTime = slot.dataset.time;
-                        if (draggedTimeSlot && draggedTimeSlot !== targetTime) {
-                            saveTimelineState();
-                            const val1 = state.timeline[currentTimelineMode][draggedTimeSlot] || document.querySelector(`[data-time="${draggedTimeSlot}"] .time-content`).innerText;
-                            const val2 = state.timeline[currentTimelineMode][targetTime] || content.innerText;
-
-                            state.timeline[currentTimelineMode][draggedTimeSlot] = val2;
-                            state.timeline[currentTimelineMode][targetTime] = val1;
-                            localStorage.setItem('time_app_data', JSON.stringify(state));
-                            initTimeline();
-                        }
-                    });
-
-                    slot.appendChild(label);
-                    slot.appendChild(content);
-                    container.appendChild(slot);
+            // 監聽雲端資料即時變更
+            dbRef.on('value', (snapshot) => {
+                const remoteData = snapshot.val();
+                if (remoteData) {
+                    isRemoteUpdating = true;
+                    state = Object.assign({}, state, remoteData);
+                    localStorage.setItem('time_app_data', JSON.stringify(state));
+                    renderAll();
+                    initTimeline();
+                    isRemoteUpdating = false;
+                    updateSyncBadge(true, '已連線雲端同步');
+                } else {
+                    // 若雲端無資料，上傳本機資料建立初始化
+                    syncToCloud();
+                    updateSyncBadge(true, '已連線雲端 (初始化資料)');
                 }
-            }
+            }, (error) => {
+                console.error('Firebase 存取失敗:', error);
+                updateSyncBadge(false, '連線失敗：請檢查 Config 或權限');
+            });
+
+        } catch (err) {
+            console.error('Firebase 初始化失敗:', err);
+            updateSyncBadge(false, 'Config 格式錯誤');
+        }
+    }
+
+    function updateSyncBadge(active, text) {
+        const badge = document.getElementById('sync-status');
+        const textEl = document.getElementById('sync-text');
+        if (active) {
+            badge.classList.add('active');
+        } else {
+            badge.classList.remove('active');
+        }
+        textEl.innerText = text;
+    }
+
+    function syncToCloud() {
+        if (dbRef && !isRemoteUpdating) {
+            // 上傳資料時排除敏感金鑰設定本身
+            const dataToSync = Object.assign({}, state);
+            delete dataToSync.firebaseConfig;
+            delete dataToSync.syncKey;
+            dbRef.set(dataToSync);
+        }
+    }
+
+    function saveData() {
+        localStorage.setItem('time_app_data', JSON.stringify(state));
+        renderAll();
+        syncToCloud();
+    }
+
+    function saveFirebaseSettings() {
+        const configInput = document.getElementById('firebase-config-input').value.trim();
+        const keyInput = document.getElementById('sync-key-input').value.trim();
+
+        if (!configInput || !keyInput) {
+            alert('請完整填寫 Firebase Config 與同步金鑰！');
+            return;
         }
 
-        // 智慧自動帶入
-        function autoFillSchedule() {
-            let pool = [];
+        state.firebaseConfig = configInput;
+        state.syncKey = keyInput;
+        localStorage.setItem('time_app_data', JSON.stringify(state));
 
-            state.routines.forEach(item => pool.push(`🔄 ${item.text}`));
-            state.matrix.q1.forEach(item => pool.push(`🚨 [Q1] ${item}`));
-            state.matrix.q3.forEach(item => pool.push(`⚡ [Q3] ${item}`));
-            state.matrix.q2.forEach(item => pool.push(`🎯 [Q2] ${item}`));
+        initFirebase();
+        alert('Firebase 雲端設定已儲存並嘗試連線！');
+    }
 
-            if (state.matrix.q1.length === 0) {
-                state.matrix.q4.forEach(item => pool.push(`☕ [Q4] ${item}`));
-            }
+    // 時間軸狀態復原與重置
+    function saveTimelineState() {
+        timelineHistory.push(JSON.stringify(state.timeline[currentTimelineMode]));
+        if (timelineHistory.length > 15) timelineHistory.shift();
+    }
 
-            if (pool.length === 0) {
-                alert('目前沒有可自動排入的事項。');
-                return;
-            }
+    function undoTimeline() {
+        if (timelineHistory.length === 0) {
+            alert('已無可復原的上一步紀錄。');
+            return;
+        }
+        const previousState = timelineHistory.pop();
+        state.timeline[currentTimelineMode] = JSON.parse(previousState);
+        saveData();
+        initTimeline();
+    }
 
+    function resetTimeline() {
+        if (confirm('確定要重置目前的今日時間軸嗎？這將清空此模式下的所有填寫事項。')) {
             saveTimelineState();
-
-            let poolIndex = 0;
-            const timelineData = state.timeline[currentTimelineMode];
-
-            for (let hour = 0; hour < 24; hour++) {
-                for (let min = 0; min < 60; min += 15) {
-                    const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                    const currentVal = timelineData[timeStr];
-                    const isFixed = fixedRoutines.common[timeStr] || (currentTimelineMode === 'weekday' && fixedRoutines.weekday[timeStr]);
-
-                    const isDefaultSleep = (hour >= 23 || hour < 6 || (hour === 6 && min < 30)) && (!currentVal || currentVal === '😴 睡眠時間');
-                    const isDefaultWork = currentTimelineMode === 'weekday' && ((hour >= 8 && hour < 12) || (hour >= 13 && hour < 17)) && (!currentVal || currentVal === '💼 工作時間');
-                    const isEmptySlot = (!currentVal || currentVal.trim() === '') && !isFixed;
-
-                    if ((isEmptySlot || isDefaultSleep || isDefaultWork) && poolIndex < pool.length) {
-                        timelineData[timeStr] = pool[poolIndex];
-                        poolIndex++;
-                    }
-                }
-            }
-
-            localStorage.setItem('time_app_data', JSON.stringify(state));
+            state.timeline[currentTimelineMode] = {};
+            saveData();
             initTimeline();
-            alert(`已根據優先級成功將 ${poolIndex} 項任務自動安排至時間軸！`);
         }
+    }
 
-        // Google 日曆處理
-        function saveGCalUrl() {
-            const urlInput = document.getElementById('gcal-url-input').value.trim();
-            state.gcalUrl = urlInput;
-            localStorage.setItem('time_app_data', JSON.stringify(state));
+    // 切換頁籤
+    function switchView(viewId, el) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+        document.getElementById(`view-${viewId}`).classList.add('active');
+        el.classList.add('active');
+        
+        if (viewId === 'calendar') {
             loadGCalIframe();
+        } else if (viewId === 'settings') {
+            document.getElementById('firebase-config-input').value = typeof state.firebaseConfig === 'object' ? JSON.stringify(state.firebaseConfig) : (state.firebaseConfig || '');
+            document.getElementById('sync-key-input').value = state.syncKey || '';
         }
+    }
 
-        function loadGCalIframe() {
-            const input = document.getElementById('gcal-url-input');
-            const container = document.getElementById('gcal-container');
-            const iframe = document.getElementById('gcal-iframe');
+    function switchPlanTab(level, el) {
+        currentPlanLevel = level;
+        document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+        if (el) el.classList.add('active');
+        renderPlans();
+    }
 
-            if (state.gcalUrl) {
-                input.value = state.gcalUrl;
-                iframe.src = state.gcalUrl;
-                container.style.display = 'block';
-            } else {
-                container.style.display = 'none';
-            }
+    function switchTimelineMode(mode) {
+        currentTimelineMode = mode;
+        document.getElementById('btn-weekday').classList.toggle('active', mode === 'weekday');
+        document.getElementById('btn-weekend').classList.toggle('active', mode === 'weekend');
+        initTimeline();
+    }
+
+    // 隨記與例行事項
+    function addQuickNote() {
+        const input = document.getElementById('quick-input');
+        if (!input.value.trim()) return;
+        state.quickNotes.push({ id: Date.now(), text: input.value });
+        input.value = '';
+        saveData();
+    }
+
+    function addRoutine() {
+        const input = document.getElementById('routine-input');
+        if (!input.value.trim()) return;
+        state.routines.push({ id: Date.now(), text: input.value });
+        input.value = '';
+        saveData();
+    }
+
+    function dispatchQuickNote(id, targetQ) {
+        if (!targetQ) return;
+        const index = state.quickNotes.findIndex(n => n.id === id);
+        if (index > -1) {
+            const note = state.quickNotes.splice(index, 1)[0];
+            state.matrix[targetQ].push(note.text);
+            saveData();
         }
+    }
 
-        // 資料匯出 (JSON / CSV 報表)
-        function exportData(type) {
-            const nowStr = new Date().toISOString().slice(0, 10);
-            if (type === 'json') {
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
-                const downloadAnchor = document.createElement('a');
-                downloadAnchor.setAttribute("href", dataStr);
-                downloadAnchor.setAttribute("download", `time_management_backup_${nowStr}.json`);
-                document.body.appendChild(downloadAnchor);
-                downloadAnchor.click();
-                downloadAnchor.remove();
-            } else if (type === 'csv') {
-                let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-                csvContent += "類別,項目內容,額外備註\n";
+    function deleteItem(category, id, subKey = null) {
+        if (subKey) {
+            state[category][subKey] = state[category][subKey].filter(item => item.id !== id && item !== id);
+        } else {
+            state[category] = state[category].filter(item => item.id !== id);
+        }
+        saveData();
+    }
 
-                state.routines.forEach(r => csvContent += `例行事項,"${r.text}",每日執行\n`);
-                state.matrix.q1.forEach(q => csvContent += `矩陣 Q1 重要緊急,"${q}",高優先\n`);
-                state.matrix.q2.forEach(q => csvContent += `矩陣 Q2 重要不緊急,"${q}",長期價值\n`);
-                state.matrix.q3.forEach(q => csvContent += `矩陣 Q3 不重要緊急,"${q}",規劃安排\n`);
-                state.matrix.q4.forEach(q => csvContent += `矩陣 Q4 不重要不緊急,"${q}",低優先\n`);
+    function deleteMatrixItem(qKey, index) {
+        state.matrix[qKey].splice(index, 1);
+        saveData();
+    }
 
-                Object.keys(state.plans).forEach(level => {
-                    state.plans[level].forEach(p => csvContent += `計畫 (${level}),"${p.text}",目標\n`);
+    // 計畫
+    function addPlan() {
+        const input = document.getElementById('plan-input');
+        if (!input.value.trim()) return;
+        state.plans[currentPlanLevel].push({ id: Date.now(), text: input.value, done: false });
+        input.value = '';
+        saveData();
+    }
+
+    function togglePlan(id) {
+        const item = state.plans[currentPlanLevel].find(p => p.id === id);
+        if (item) item.done = !item.done;
+        saveData();
+    }
+
+    // 時間軸
+    function initTimeline() {
+        const container = document.getElementById('timeline-container');
+        container.innerHTML = '';
+        const activeData = state.timeline[currentTimelineMode] || {};
+
+        for (let hour = 0; hour < 24; hour++) {
+            for (let min = 0; min < 60; min += 15) {
+                const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                const isSleepDefault = (hour >= 23 || hour < 6) || (hour === 6 && min < 30);
+                const isWorkDefault = currentTimelineMode === 'weekday' && 
+                    ((hour >= 8 && hour < 12) || (hour >= 13 && hour < 17));
+
+                let fixedTask = fixedRoutines.common[timeStr] || (currentTimelineMode === 'weekday' ? fixedRoutines.weekday[timeStr] : null);
+
+                const slot = document.createElement('div');
+                let classNames = 'time-slot';
+                if (fixedTask) classNames += ' routine-fixed';
+                else if (isSleepDefault) classNames += ' sleep';
+                else if (isWorkDefault) classNames += ' work-time';
+                slot.className = classNames;
+                slot.draggable = true;
+                slot.dataset.time = timeStr;
+
+                const label = document.createElement('div');
+                label.className = 'time-label';
+                label.innerHTML = `<span class="drag-handle">⋮⋮</span>${timeStr}`;
+
+                const content = document.createElement('div');
+                content.className = 'time-content';
+                content.contentEditable = true;
+
+                if (activeData[timeStr] !== undefined) {
+                    content.innerText = activeData[timeStr];
+                } else if (fixedTask) {
+                    content.innerText = fixedTask;
+                } else if (isSleepDefault) {
+                    content.innerText = '😴 睡眠時間';
+                } else if (isWorkDefault) {
+                    content.innerText = '💼 工作時間';
+                } else {
+                    content.innerText = '';
+                }
+
+                content.onfocus = () => saveTimelineState();
+                content.onblur = (e) => {
+                    let text = e.target.innerText.trim();
+                    state.timeline[currentTimelineMode][timeStr] = text;
+                    saveData();
+                };
+
+                slot.addEventListener('dragstart', (e) => {
+                    draggedTimeSlot = timeStr;
+                    e.dataTransfer.setData('text/plain', timeStr);
                 });
 
-                Object.keys(state.timeline).forEach(mode => {
-                    Object.keys(state.timeline[mode]).forEach(time => {
-                        const val = state.timeline[mode][time];
-                        if (val) csvContent += `時間軸 (${mode}),"${time} - ${val}",每日安排\n`;
-                    });
+                slot.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    slot.classList.add('drag-over');
                 });
 
-                const downloadAnchor = document.createElement('a');
-                downloadAnchor.setAttribute("href", encodeURI(csvContent));
-                downloadAnchor.setAttribute("download", `time_management_report_${nowStr}.csv`);
-                document.body.appendChild(downloadAnchor);
-                downloadAnchor.click();
-                downloadAnchor.remove();
-            }
-        }
+                slot.addEventListener('dragleave', () => slot.classList.remove('drag-over'));
 
-        // 資料備份匯入 JSON
-        function importJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+                slot.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    slot.classList.remove('drag-over');
+                    const targetTime = slot.dataset.time;
+                    if (draggedTimeSlot && draggedTimeSlot !== targetTime) {
+                        saveTimelineState();
+                        const val1 = state.timeline[currentTimelineMode][draggedTimeSlot] || document.querySelector(`[data-time="${draggedTimeSlot}"] .time-content`).innerText;
+                        const val2 = state.timeline[currentTimelineMode][targetTime] || content.innerText;
 
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const importedData = JSON.parse(e.target.result);
-                    if (confirm('匯入備份將會覆蓋現有資料，確定繼續嗎？')) {
-                        state = importedData;
+                        state.timeline[currentTimelineMode][draggedTimeSlot] = val2;
+                        state.timeline[currentTimelineMode][targetTime] = val1;
                         saveData();
                         initTimeline();
-                        alert('資料庫還原成功！');
                     }
-                } catch (err) {
-                    alert('匯入失敗：檔案格式不正確。');
-                }
-            };
-            reader.readAsText(file);
-        }
+                });
 
-        // Render Functions & Drag/Drop for Plans
-        function renderAll() {
-            // Render Quick Notes
-            const qList = document.getElementById('quick-list');
-            qList.innerHTML = state.quickNotes.map(n => `
-                <div class="task-item">
-                    <span class="task-title">${n.text}</span>
-                    <div class="task-actions">
-                        <select onchange="dispatchQuickNote(${n.id}, this.value); this.value='';" style="padding: 2px 4px; font-size:11px;">
-                            <option value="">轉至矩陣...</option>
-                            <option value="q1">Q1 重要緊急</option>
-                            <option value="q2">Q2 重要不急</option>
-                            <option value="q3">Q3 不重緊急</option>
-                            <option value="q4">Q4 不重不急</option>
-                        </select>
-                        <button class="btn-sm" style="background:var(--accent-red)" onclick="deleteItem('quickNotes', ${n.id})">✕</button>
-                    </div>
-                </div>
-            `).join('');
-
-            // Render Routines
-            const rList = document.getElementById('routine-list');
-            rList.innerHTML = state.routines.map(r => `
-                <div class="task-item">
-                    <span class="task-title">🔄 ${r.text}</span>
-                    <button class="btn-sm" style="background:var(--accent-red)" onclick="deleteItem('routines', ${r.id})">✕</button>
-                </div>
-            `).join('');
-
-            // Render Routines in Matrix View
-            const mrList = document.getElementById('matrix-routine-list');
-            if (state.routines.length === 0) {
-                mrList.innerHTML = `<div style="font-size:12px; color:var(--text-secondary); font-style:italic;">尚無例行事項</div>`;
-            } else {
-                mrList.innerHTML = state.routines.map(r => `
-                    <div class="task-item" style="font-size:13px; padding:6px 0;">
-                        <span>🔄 ${r.text}</span>
-                    </div>
-                `).join('');
+                slot.appendChild(label);
+                slot.appendChild(content);
+                container.appendChild(slot);
             }
+        }
+    }
 
-            // Render Matrix
-            ['q1', 'q2', 'q3', 'q4'].forEach(q => {
-                const el = document.getElementById(`${q}-list`);
-                el.innerHTML = state.matrix[q].map((text, idx) => `
-                    <div class="task-item" style="font-size:13px;">
-                        <span>• ${text}</span>
-                        <button class="btn-sm" style="background:none; color:var(--accent-red); padding:0 4px;" onclick="state.matrix['${q}'].splice(${idx},1); saveData();">✕</button>
-                    </div>
-                `).join('');
-            });
+    function autoFillSchedule() {
+        let pool = [];
 
-            renderPlans();
+        state.routines.forEach(item => pool.push(`🔄 ${item.text}`));
+        state.matrix.q1.forEach(item => pool.push(`🚨 [Q1] ${item}`));
+        state.matrix.q3.forEach(item => pool.push(`⚡ [Q3] ${item}`));
+        state.matrix.q2.forEach(item => pool.push(`🎯 [Q2] ${item}`));
+
+        if (state.matrix.q1.length === 0) {
+            state.matrix.q4.forEach(item => pool.push(`☕ [Q4] ${item}`));
         }
 
-        function renderPlans() {
-            const pList = document.getElementById('plan-list');
-            pList.innerHTML = '';
-
-            state.plans[currentPlanLevel].forEach((p, index) => {
-                const item = document.createElement('div');
-                item.className = 'task-item';
-                item.draggable = true;
-                item.dataset.index = index;
-
-                item.innerHTML = `
-                    <span class="drag-handle">⋮⋮</span>
-                    <span class="task-title">${p.text}</span>
-                    <button class="btn-sm" style="background:var(--accent-red)" onclick="deleteItem('plans', ${p.id}, '${currentPlanLevel}')">✕</button>
-                `;
-
-                item.addEventListener('dragstart', (e) => {
-                    item.classList.add('dragging');
-                    e.dataTransfer.setData('text/plain', index);
-                });
-
-                item.addEventListener('dragend', () => item.classList.remove('dragging'));
-
-                item.addEventListener('dragover', (e) => e.preventDefault());
-
-                item.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
-                    const toIndex = index;
-                    if (fromIndex !== toIndex) {
-                        const movedItem = state.plans[currentPlanLevel].splice(fromIndex, 1)[0];
-                        state.plans[currentPlanLevel].splice(toIndex, 0, movedItem);
-                        saveData();
-                    }
-                });
-
-                pList.appendChild(item);
-            });
+        if (pool.length === 0) {
+            alert('目前沒有可自動排入的事項。');
+            return;
         }
 
-        // Initialize App
+        saveTimelineState();
+
+        let poolIndex = 0;
+        const timelineData = state.timeline[currentTimelineMode];
+
+        for (let hour = 0; hour < 24; hour++) {
+            for (let min = 0; min < 60; min += 15) {
+                const timeStr = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                const currentVal = timelineData[timeStr];
+                const isFixed = fixedRoutines.common[timeStr] || (currentTimelineMode === 'weekday' && fixedRoutines.weekday[timeStr]);
+
+                const isDefaultSleep = (hour >= 23 || hour < 6 || (hour === 6 && min < 30)) && (!currentVal || currentVal === '😴 睡眠時間');
+                const isDefaultWork = currentTimelineMode === 'weekday' && ((hour >= 8 && hour < 12) || (hour >= 13 && hour < 17)) && (!currentVal || currentVal === '💼 工作時間');
+                const isEmptySlot = (!currentVal || currentVal.trim() === '') && !isFixed;
+
+                if ((isEmptySlot || isDefaultSleep || isDefaultWork) && poolIndex < pool.length) {
+                    timelineData[timeStr] = pool[poolIndex];
+                    poolIndex++;
+                }
+            }
+        }
+
+        saveData();
         initTimeline();
+        alert(`已根據優先級成功將 ${poolIndex} 項任務自動安排至時間軸！`);
+    }
+
+    // Google 日曆
+    function saveGCalUrl() {
+        const urlInput = document.getElementById('gcal-url-input').value.trim();
+        state.gcalUrl = urlInput;
+        saveData();
+        loadGCalIframe();
+    }
+
+    function loadGCalIframe() {
+        const input = document.getElementById('gcal-url-input');
+        const container = document.getElementById('gcal-container');
+        const iframe = document.getElementById('gcal-iframe');
+
+        if (state.gcalUrl) {
+            input.value = state.gcalUrl;
+            iframe.src = state.gcalUrl;
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    // 本機備份 / 匯入
+    function exportData(type) {
+        const nowStr = new Date().toISOString().slice(0, 10);
+        if (type === 'json') {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `time_management_backup_${nowStr}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        } else if (type === 'csv') {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "類別,項目內容,額外備註\n";
+
+            state.routines.forEach(r => csvContent += `例行事項,"${r.text}",每日執行\n`);
+            state.matrix.q1.forEach(q => csvContent += `矩陣 Q1 重要緊急,"${q}",高優先\n`);
+            state.matrix.q2.forEach(q => csvContent += `矩陣 Q2 重要不緊急,"${q}",長期價值\n`);
+            state.matrix.q3.forEach(q => csvContent += `矩陣 Q3 不重要緊急,"${q}",規劃安排\n`);
+            state.matrix.q4.forEach(q => csvContent += `矩陣 Q4 不重要不緊急,"${q}",低優先\n`);
+
+            Object.keys(state.plans).forEach(level => {
+                state.plans[level].forEach(p => csvContent += `計畫 (${level}),"${p.text}",目標\n`);
+            });
+
+            Object.keys(state.timeline).forEach(mode => {
+                Object.keys(state.timeline[mode]).forEach(time => {
+                    const val = state.timeline[mode][time];
+                    if (val) csvContent += `時間軸 (${mode}),"${time} - ${val}",每日安排\n`;
+                });
+            });
+
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", encodeURI(csvContent));
+            downloadAnchor.setAttribute("download", `time_management_report_${nowStr}.csv`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+    }
+
+    function importJSON(event) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (importedData && typeof importedData === 'object') {
+                    state = Object.assign({}, state, importedData);
+                    saveData();
+                    initTimeline();
+                    alert('資料備份已成功復原並同步！');
+                }
+            } catch (err) {
+                alert('匯入失敗：格式不正確。');
+            }
+        };
+        if (event.target.files[0]) {
+            reader.readAsText(event.target.files[0]);
+        }
+    }
+
+    // Render UI
+    function renderQuickNotes() {
+        const list = document.getElementById('quick-list');
+        list.innerHTML = '';
+        state.quickNotes.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'task-item';
+            el.innerHTML = `
+                <span class="task-title">${item.text}</span>
+                <div class="task-actions">
+                    <select onchange="dispatchQuickNote(${item.id}, this.value); this.value='';" style="font-size: 11px; padding: 4px;">
+                        <option value="">指派至...</option>
+                        <option value="q1">Q1 緊急重要</option>
+                        <option value="q2">Q2 重要不緊急</option>
+                        <option value="q3">Q3 緊急不重要</option>
+                        <option value="q4">Q4 不緊急不重要</option>
+                    </select>
+                    <button class="btn-sm btn-danger" onclick="deleteItem('quickNotes', ${item.id})">刪除</button>
+                </div>
+            `;
+            list.appendChild(el);
+        });
+    }
+
+    function renderRoutines() {
+        const list = document.getElementById('routine-list');
+        const matrixList = document.getElementById('matrix-routine-list');
+        list.innerHTML = '';
+        matrixList.innerHTML = '';
+
+        state.routines.forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'task-item';
+            el.innerHTML = `
+                <span class="task-title">🔄 ${item.text}</span>
+                <button class="btn-sm btn-danger" onclick="deleteItem('routines', ${item.id})">刪除</button>
+            `;
+            list.appendChild(el);
+
+            const mEl = document.createElement('div');
+            mEl.className = 'task-item';
+            mEl.style.padding = '6px 0';
+            mEl.innerHTML = `<span style="font-size: 13px;">• ${item.text}</span>`;
+            matrixList.appendChild(mEl);
+        });
+    }
+
+    function renderMatrix() {
+        ['q1', 'q2', 'q3', 'q4'].forEach(q => {
+            const list = document.getElementById(`${q}-list`);
+            list.innerHTML = '';
+            state.matrix[q].forEach((text, index) => {
+                const el = document.createElement('div');
+                el.className = 'task-item';
+                el.style.padding = '6px 0';
+                el.innerHTML = `
+                    <span class="task-title" style="font-size: 13px;">${text}</span>
+                    <button class="btn-sm btn-danger" style="padding: 2px 6px;" onclick="deleteMatrixItem('${q}', ${index})">✕</button>
+                `;
+                list.appendChild(el);
+            });
+        });
+    }
+
+    function renderPlans() {
+        const list = document.getElementById('plan-list');
+        list.innerHTML = '';
+        (state.plans[currentPlanLevel] || []).forEach(item => {
+            const el = document.createElement('div');
+            el.className = 'task-item';
+            el.innerHTML = `
+                <span class="task-title" style="${item.done ? 'text-decoration: line-through; opacity: 0.5;' : ''}">${item.text}</span>
+                <div class="task-actions">
+                    <button class="btn-sm" style="background: ${item.done ? 'var(--text-secondary)' : 'var(--accent-green)'}" onclick="togglePlan(${item.id})">${item.done ? '取消' : '完成'}</button>
+                    <button class="btn-sm btn-danger" onclick="deleteItem('plans', ${item.id}, '${currentPlanLevel}')">刪除</button>
+                </div>
+            `;
+            list.appendChild(el);
+        });
+    }
+
+    function renderAll() {
+        renderQuickNotes();
+        renderRoutines();
+        renderMatrix();
+        renderPlans();
+    }
+
+    window.onload = () => {
         renderAll();
-    </script>
-</body>
-</html>
+        initTimeline();
+        initFirebase();
+    };
+</script>
