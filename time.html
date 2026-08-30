@@ -1,552 +1,597 @@
-<!-- iOS PWA Meta Tags -->
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="時間管理">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23007AFF'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>⏱️</text></svg>">
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>時間管理助手</title>
 
-<!-- Firebase SDK (v10.8.0) -->
-<script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js)"></script>
-<script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js)"></script>
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="時間管理">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23007AFF'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>⏱️</text></svg>">
 
-<style>
-    :root {
-        --bg-primary: #F2F2F7;
-        --bg-secondary: #FFFFFF;
-        --text-primary: #000000;
-        --text-secondary: #8E8E93;
-        --accent-blue: #007AFF;
-        --accent-red: #FF3B30;
-        --accent-orange: #FF9500;
-        --accent-green: #34C759;
-        --accent-purple: #AF52DE;
-        --border-color: #C6C6C8;
-        --card-radius: 12px;
-    }
+    <!-- Firebase SDK (v10.8.0) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
-    @media (prefers-color-scheme: dark) {
+    <style>
         :root {
-            --bg-primary: #000000;
-            --bg-secondary: #1C1C1E;
-            --text-primary: #FFFFFF;
+            --bg-primary: #F2F2F7;
+            --bg-secondary: #FFFFFF;
+            --text-primary: #000000;
             --text-secondary: #8E8E93;
-            --border-color: #38383A;
+            --accent-blue: #007AFF;
+            --accent-red: #FF3B30;
+            --accent-orange: #FF9500;
+            --accent-green: #34C759;
+            --accent-purple: #AF52DE;
+            --border-color: #C6C6C8;
+            --card-radius: 12px;
         }
-    }
 
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
-        -webkit-tap-highlight-color: transparent;
-        user-select: none;
-    }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #000000;
+                --bg-secondary: #1C1C1E;
+                --text-primary: #FFFFFF;
+                --text-secondary: #8E8E93;
+                --border-color: #38383A;
+            }
+        }
 
-    body {
-        background-color: var(--bg-primary);
-        color: var(--text-primary);
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: calc(env(safe-area-inset-bottom) + 65px);
-        max-width: 600px;
-        margin: 0 auto;
-    }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
 
-    .tab-bar {
-        position: fixed;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 100%;
-        max-width: 600px;
-        background: var(--bg-secondary);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border-top: 0.5px solid var(--border-color);
-        display: flex;
-        justify-content: space-around;
-        padding-top: 8px;
-        padding-bottom: env(safe-area-inset-bottom);
-        z-index: 1000;
-    }
+        /* 預設為行動端/小螢幕滿版版型 */
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: calc(env(safe-area-inset-bottom) + 65px);
+            width: 100%;
+            margin: 0 auto;
+            min-height: 100vh;
+        }
 
-    .tab-item {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        font-size: 10px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        width: 16%;
-    }
+        /* -------------------------------------------------- */
+        /* 電腦 Web 模式（當螢幕寬度達 768px 以上時觸發）        */
+        /* -------------------------------------------------- */
+        @media (min-width: 768px) {
+            body {
+                background-color: #121212;
+                padding-top: 40px;
+                padding-bottom: 40px;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+            }
 
-    .tab-item.active {
-        color: var(--accent-blue);
-    }
+            .app-wrapper {
+                width: 100%;
+                max-width: 900px;
+                background-color: var(--bg-primary);
+                border-radius: 20px;
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+                overflow: hidden;
+                position: relative;
+                padding-bottom: 80px; /* 給底部 Tab 空間 */
+            }
 
-    .tab-icon {
-        font-size: 20px;
-        margin-bottom: 2px;
-    }
+            .tab-bar {
+                position: absolute !important;
+                border-bottom-left-radius: 20px;
+                border-bottom-right-radius: 20px;
+            }
+        }
 
-    .view {
-        display: none;
-        padding: 16px;
-        animation: fadeIn 0.2s ease-in-out;
-    }
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 900px;
+            background: var(--bg-secondary);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 0.5px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding-top: 8px;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+        }
 
-    .view.active {
-        display: block;
-    }
+        .tab-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            width: 16%;
+        }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(5px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+        .tab-item.active {
+            color: var(--accent-blue);
+        }
 
-    .header {
-        font-size: 28px;
-        font-weight: 700;
-        margin-bottom: 16px;
-        letter-spacing: -0.5px;
-    }
+        .tab-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
 
-    .card {
-        background: var(--bg-secondary);
-        border-radius: var(--card-radius);
-        padding: 14px;
-        margin-bottom: 16px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
+        .view {
+            display: none;
+            padding: 16px;
+            animation: fadeIn 0.2s ease-in-out;
+        }
 
-    .input-group {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 12px;
-    }
+        .view.active {
+            display: block;
+        }
 
-    input[type="text"], input[type="password"], textarea, select {
-        flex: 1;
-        padding: 10px 12px;
-        border-radius: 8px;
-        border: 1px solid var(--border-color);
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        font-size: 15px;
-        outline: none;
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    textarea {
-        font-family: monospace;
-        font-size: 11px;
-        resize: vertical;
-    }
+        .header {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
 
-    button {
-        padding: 10px 16px;
-        border-radius: 8px;
-        border: none;
-        background: var(--accent-blue);
-        color: white;
-        font-weight: 600;
-        font-size: 15px;
-        cursor: pointer;
-    }
+        .card {
+            background: var(--bg-secondary);
+            border-radius: var(--card-radius);
+            padding: 14px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
 
-    .btn-danger { background: var(--accent-red); }
-    .btn-secondary { background: var(--text-secondary); }
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
 
-    .task-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px;
-        background: var(--bg-secondary);
-        border-bottom: 0.5px solid var(--border-color);
-    }
+        input[type="text"], input[type="password"], textarea, select {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 16px; /* 設為 16px 防止 iOS Safari 自動對焦點放大 */
+            outline: none;
+        }
 
-    .task-item:last-child { border-bottom: none; }
-    .task-title { font-size: 15px; flex: 1; word-break: break-word; }
-    .task-actions { display: flex; gap: 6px; }
-    .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 6px; }
+        textarea {
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
 
-    .routine-card-matrix {
-        background: var(--bg-secondary);
-        border-radius: var(--card-radius);
-        padding: 12px;
-        margin-bottom: 16px;
-        border-left: 4px solid var(--accent-purple);
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
+        button {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent-blue);
+            color: white;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+        }
 
-    .matrix-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-    }
+        .btn-danger { background: var(--accent-red); }
+        .btn-secondary { background: var(--text-secondary); }
 
-    .matrix-box {
-        background: var(--bg-secondary);
-        border-radius: var(--card-radius);
-        padding: 10px;
-        min-height: 160px;
-        border-top: 4px solid;
-    }
+        .task-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border-bottom: 0.5px solid var(--border-color);
+        }
 
-    .m-q1 { border-color: var(--accent-red); }
-    .m-q2 { border-color: var(--accent-orange); }
-    .m-q3 { border-color: var(--accent-blue); }
-    .m-q4 { border-color: var(--text-secondary); }
+        .task-item:last-child { border-bottom: none; }
+        .task-title { font-size: 15px; flex: 1; word-break: break-word; }
+        .task-actions { display: flex; gap: 6px; }
+        .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 6px; }
 
-    .matrix-title {
-        font-size: 12px;
-        font-weight: 700;
-        margin-bottom: 8px;
-        color: var(--text-secondary);
-        text-transform: uppercase;
-    }
+        .routine-card-matrix {
+            background: var(--bg-secondary);
+            border-radius: var(--card-radius);
+            padding: 12px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--accent-purple);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
 
-    .timeline-controls {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        margin-bottom: 12px;
-    }
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
 
-    .control-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-    }
+        .matrix-box {
+            background: var(--bg-secondary);
+            border-radius: var(--card-radius);
+            padding: 10px;
+            min-height: 160px;
+            border-top: 4px solid;
+        }
 
-    .mode-toggle {
-        display: flex;
-        background: var(--bg-primary);
-        border-radius: 8px;
-        padding: 2px;
-    }
+        .m-q1 { border-color: var(--accent-red); }
+        .m-q2 { border-color: var(--accent-orange); }
+        .m-q3 { border-color: var(--accent-blue); }
+        .m-q4 { border-color: var(--text-secondary); }
 
-    .mode-btn {
-        padding: 6px 12px;
-        font-size: 13px;
-        border-radius: 6px;
-        background: transparent;
-        color: var(--text-secondary);
-        border: none;
-    }
+        .matrix-title {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
 
-    .mode-btn.active {
-        background: var(--bg-secondary);
-        color: var(--text-primary);
-        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
+        .timeline-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
 
-    .info-box {
-        background: var(--bg-secondary);
-        border-radius: 8px;
-        padding: 10px 12px;
-        font-size: 12px;
-        color: var(--text-secondary);
-        margin-bottom: 12px;
-        line-height: 1.4;
-        border-left: 3px solid var(--accent-blue);
-    }
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
 
-    .timeline { display: flex; flex-direction: column; }
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 2px;
+        }
 
-    .time-slot {
-        display: flex;
-        align-items: center;
-        min-height: 38px;
-        border-bottom: 0.5px solid var(--border-color);
-        font-size: 12px;
-        padding: 2px 0;
-    }
+        .mode-btn {
+            padding: 6px 12px;
+            font-size: 13px;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+        }
 
-    .time-slot.drag-over {
-        background: rgba(0, 122, 255, 0.2) !important;
-        border: 1px dashed var(--accent-blue);
-    }
+        .mode-btn.active {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
 
-    .time-label {
-        width: 65px;
-        color: var(--text-secondary);
-        font-variant-numeric: tabular-nums;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
+        .info-box {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            line-height: 1.4;
+            border-left: 3px solid var(--accent-blue);
+        }
 
-    .drag-handle { margin-right: 4px; color: var(--text-secondary); font-size: 12px; cursor: grab; }
+        .timeline { display: flex; flex-direction: column; }
 
-    .time-content {
-        flex: 1;
-        min-height: 34px;
-        display: flex;
-        align-items: center;
-        padding: 4px 8px;
-        border-radius: 4px;
-        background: transparent;
-        word-break: break-all;
-        outline: none;
-    }
+        .time-slot {
+            display: flex;
+            align-items: center;
+            min-height: 38px;
+            border-bottom: 0.5px solid var(--border-color);
+            font-size: 12px;
+            padding: 2px 0;
+        }
 
-    .time-slot.sleep { background: rgba(142, 142, 147, 0.08); }
-    .time-slot.routine-fixed { background: rgba(175, 82, 222, 0.08); }
-    .time-slot.work-time { background: rgba(0, 122, 255, 0.05); }
+        .time-slot.drag-over {
+            background: rgba(0, 122, 255, 0.2) !important;
+            border: 1px dashed var(--accent-blue);
+        }
 
-    .sub-tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
-    .sub-tab {
-        padding: 6px 12px;
-        border-radius: 15px;
-        background: var(--bg-secondary);
-        font-size: 13px;
-        white-space: nowrap;
-        color: var(--text-secondary);
-        cursor: pointer;
-    }
+        .time-label {
+            width: 65px;
+            color: var(--text-secondary);
+            font-variant-numeric: tabular-nums;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
 
-    .sub-tab.active { background: var(--accent-blue); color: white; }
+        .drag-handle { margin-right: 4px; color: var(--text-secondary); font-size: 12px; cursor: grab; }
 
-    .cal-btn-large {
-        width: 100%;
-        padding: 14px;
-        border-radius: 10px;
-        font-size: 15px;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        margin-bottom: 10px;
-        text-decoration: none;
-        color: white;
-    }
+        .time-content {
+            flex: 1;
+            min-height: 34px;
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: transparent;
+            word-break: break-all;
+            outline: none;
+        }
 
-    /* Sync Status Pill */
-    .sync-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 12px;
-        padding: 4px 10px;
-        border-radius: 12px;
-        background: rgba(142, 142, 147, 0.15);
-        color: var(--text-secondary);
-        margin-bottom: 10px;
-    }
+        .time-slot.sleep { background: rgba(142, 142, 147, 0.08); }
+        .time-slot.routine-fixed { background: rgba(175, 82, 222, 0.08); }
+        .time-slot.work-time { background: rgba(0, 122, 255, 0.05); }
 
-    .sync-badge.active {
-        background: rgba(52, 199, 89, 0.15);
-        color: var(--accent-green);
-    }
+        .sub-tabs { display: flex; gap: 8px; margin-bottom: 12px; overflow-x: auto; }
+        .sub-tab {
+            padding: 6px 12px;
+            border-radius: 15px;
+            background: var(--bg-secondary);
+            font-size: 13px;
+            white-space: nowrap;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
 
-    .sync-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--text-secondary);
-    }
+        .sub-tab.active { background: var(--accent-blue); color: white; }
 
-    .sync-badge.active .sync-dot {
-        background: var(--accent-green);
-    }
-</style>
-<!-- 1. 隨記與例行事項 -->
-<div id="view-quick" class="view active">
-    <div class="header">隨記與例行</div>
-    <div class="card">
-        <div class="input-group">
-            <input type="text" id="quick-input" placeholder="閃念/隨記靈感...">
-            <button onclick="addQuickNote()">記錄</button>
-        </div>
-        <div id="quick-list"></div>
-    </div>
+        .cal-btn-large {
+            width: 100%;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            text-decoration: none;
+            color: white;
+        }
 
-    <div class="header" style="font-size: 20px;">例行事項</div>
-    <div class="card">
-        <div class="input-group">
-            <input type="text" id="routine-input" placeholder="新增每日/每週例行...">
-            <button onclick="addRoutine()">新增</button>
-        </div>
-        <div id="routine-list"></div>
-    </div>
-</div>
+        /* Sync Status Pill */
+        .sync-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: rgba(142, 142, 147, 0.15);
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
 
-<!-- 2. 艾森豪矩陣 -->
-<div id="view-matrix" class="view">
-    <div class="header">艾森豪矩陣</div>
-    
-    <div class="routine-card-matrix">
-        <div class="matrix-title" style="color: var(--accent-purple);">🔄 固定例行事項</div>
-        <div id="matrix-routine-list"></div>
-    </div>
+        .sync-badge.active {
+            background: rgba(52, 199, 89, 0.15);
+            color: var(--accent-green);
+        }
 
-    <div class="matrix-grid">
-        <div class="matrix-box m-q1">
-            <div class="matrix-title">重要且緊急 (Q1)</div>
-            <div id="q1-list"></div>
-        </div>
-        <div class="matrix-box m-q2">
-            <div class="matrix-title">重要不緊急 (Q2)</div>
-            <div id="q2-list"></div>
-        </div>
-        <div class="matrix-box m-q3">
-            <div class="matrix-title">不重要但緊急 (Q3)</div>
-            <div id="q3-list"></div>
-        </div>
-        <div class="matrix-box m-q4">
-            <div class="matrix-title">不重要不緊急 (Q4)</div>
-            <div id="q4-list"></div>
-        </div>
-    </div>
-</div>
+        .sync-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
 
-<!-- 3. 多維度計畫 -->
-<div id="view-plan" class="view">
-    <div class="header">長短期計畫</div>
-    <div class="sub-tabs">
-        <div class="sub-tab active" onclick="switchPlanTab('year', this)">年</div>
-        <div class="sub-tab" onclick="switchPlanTab('quarter', this)">季</div>
-        <div class="sub-tab" onclick="switchPlanTab('month', this)">月</div>
-        <div class="sub-tab" onclick="switchPlanTab('week', this)">週</div>
-        <div class="sub-tab" onclick="switchPlanTab('day', this)">日</div>
-    </div>
-    <div class="card">
-        <div class="input-group">
-            <input type="text" id="plan-input" placeholder="新增目標/計畫...">
-            <button onclick="addPlan()">目標</button>
-        </div>
-        <div id="plan-list"></div>
-    </div>
-</div>
+        .sync-badge.active .sync-dot {
+            background: var(--accent-green);
+        }
+    </style>
+</head>
+<body>
 
-<!-- 4. 今日時間軸 -->
-<div id="view-timeline" class="view">
-    <div class="header">今日時間軸</div>
-    
-    <div class="timeline-controls">
-        <div class="control-row">
-            <div class="mode-toggle">
-                <button class="mode-btn active" id="btn-weekday" onclick="switchTimelineMode('weekday')">💼 工作日</button>
-                <button class="mode-btn" id="btn-weekend" onclick="switchTimelineMode('weekend')">☕ 假日</button>
-            </div>
-            <button class="btn-sm" style="background: var(--accent-purple);" onclick="autoFillSchedule()">⚡ 自動帶入事項</button>
-        </div>
-        <div class="control-row">
-            <div style="display: flex; gap: 6px;">
-                <button class="btn-sm btn-secondary" onclick="undoTimeline()">↩️ 上一步</button>
-                <button class="btn-sm btn-danger" onclick="resetTimeline()">🔄 重置時間軸</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="info-box">
-        📌 <strong>使用說明：</strong><br>
-        1. <strong>拖拉排序：</strong>長按左側圖示可拖拉對調時間軸順序。<br>
-        2. <strong>固定作息：</strong>預設已代入 06:30 盥洗、07:00 冥想、07:15 出發上班、12:45 午睡、17:15 下班、22:30 洗澡、22:45 看書。
-    </div>
-
-    <div class="card" style="padding: 8px 12px;">
-        <div class="timeline" id="timeline-container"></div>
-    </div>
-</div>
-
-<!-- 5. Google 日曆檢視 -->
-<div id="view-calendar" class="view">
-    <div class="header">Google 日曆</div>
-    
-    <div class="card">
-        <h3 style="font-size: 16px; margin-bottom: 8px;">📅 快速前往 Google 日曆</h3>
-        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
-            點擊下方按鈕直接開啟 Google Calendar：
-        </p>
-
-        <a href="[https://calendar.google.com/](https://calendar.google.com/)" target="_blank" class="cal-btn-large" style="background: var(--accent-blue);">
-            📅 開啟 Google 日曆網頁版
-        </a>
-        
-        <a href="googlecalendar://" class="cal-btn-large" style="background: var(--accent-green);">
-            📱 開啟 Google Calendar App
-        </a>
-    </div>
-
-    <div class="card">
-        <h3 style="font-size: 15px; margin-bottom: 8px;">💡 公開日曆嵌入設定</h3>
-        <div class="input-group" style="margin-bottom: 8px;">
-            <input type="text" id="gcal-url-input" placeholder="[https://calendar.google.com/calendar/embed?src=](https://calendar.google.com/calendar/embed?src=)...">
-            <button onclick="saveGCalUrl()">載入</button>
-        </div>
-    </div>
-
-    <div id="gcal-container" class="card" style="padding: 0; overflow: hidden; display: none;">
-        <iframe id="gcal-iframe" style="width:100%; height:450px; border:none;" src="" frameborder="0" scrolling="no"></iframe>
-    </div>
-</div>
-
-<!-- 6. 設定與雲端同步 -->
-<div id="view-settings" class="view">
-    <div class="header">系統設定與雲端同步</div>
-    
-    <!-- 雲端同步狀態卡片 -->
-    <div class="card">
-        <h3 style="font-size: 16px; margin-bottom: 8px;">☁️ Firebase 雲端自動同步</h3>
-        <div id="sync-status" class="sync-badge">
-            <span class="sync-dot"></span>
-            <span id="sync-text">未設定雲端同步 (離線單機版)</span>
-        </div>
-
-        <div style="margin-top: 10px;">
-            <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">1. 貼上 Firebase Config (JSON 或物件語法)</label>
-            <textarea id="firebase-config-input" rows="4" placeholder='{ "apiKey": "...", "authDomain": "...", "databaseURL": "...", "projectId": "..." }'></textarea>
-        </div>
-
-        <div style="margin-top: 8px;">
-            <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">2. 設定同步金鑰 / 帳號名稱 (跨裝置請填寫相同金鑰)</label>
+<div class="app-wrapper">
+    <!-- 1. 隨記與例行事項 -->
+    <div id="view-quick" class="view active">
+        <div class="header">隨記與例行</div>
+        <div class="card">
             <div class="input-group">
-                <input type="password" id="sync-key-input" placeholder="例如：my-secret-key-123">
-                <button onclick="saveFirebaseSettings()">開啓同步</button>
+                <input type="text" id="quick-input" placeholder="閃念/隨記靈感...">
+                <button onclick="addQuickNote()">記錄</button>
+            </div>
+            <div id="quick-list"></div>
+        </div>
+
+        <div class="header" style="font-size: 20px;">例行事項</div>
+        <div class="card">
+            <div class="input-group">
+                <input type="text" id="routine-input" placeholder="新增每日/每週例行...">
+                <button onclick="addRoutine()">新增</button>
+            </div>
+            <div id="routine-list"></div>
+        </div>
+    </div>
+
+    <!-- 2. 艾森豪矩陣 -->
+    <div id="view-matrix" class="view">
+        <div class="header">艾森豪矩陣</div>
+        
+        <div class="routine-card-matrix">
+            <div class="matrix-title" style="color: var(--accent-purple);">🔄 固定例行事項</div>
+            <div id="matrix-routine-list"></div>
+        </div>
+
+        <div class="matrix-grid">
+            <div class="matrix-box m-q1">
+                <div class="matrix-title">重要且緊急 (Q1)</div>
+                <div id="q1-list"></div>
+            </div>
+            <div class="matrix-box m-q2">
+                <div class="matrix-title">重要不緊急 (Q2)</div>
+                <div id="q2-list"></div>
+            </div>
+            <div class="matrix-box m-q3">
+                <div class="matrix-title">不重要但緊急 (Q3)</div>
+                <div id="q3-list"></div>
+            </div>
+            <div class="matrix-box m-q4">
+                <div class="matrix-title">不重要不緊急 (Q4)</div>
+                <div id="q4-list"></div>
             </div>
         </div>
     </div>
 
-    <!-- 本機備份 -->
-    <div class="card">
-        <h3 style="font-size: 16px; margin-bottom: 8px;">📲 本機檔案備份與匯入</h3>
-        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-            <button onclick="exportData('json')" style="flex: 1;">匯出備份 (JSON)</button>
-            <button onclick="exportData('csv')" style="flex: 1; background: var(--accent-green);">匯出報表 (CSV)</button>
+    <!-- 3. 多維度計畫 -->
+    <div id="view-plan" class="view">
+        <div class="header">長短期計畫</div>
+        <div class="sub-tabs">
+            <div class="sub-tab active" onclick="switchPlanTab('year', this)">年</div>
+            <div class="sub-tab" onclick="switchPlanTab('quarter', this)">季</div>
+            <div class="sub-tab" onclick="switchPlanTab('month', this)">月</div>
+            <div class="sub-tab" onclick="switchPlanTab('week', this)">週</div>
+            <div class="sub-tab" onclick="switchPlanTab('day', this)">日</div>
         </div>
-        <input type="file" id="import-file-input" accept=".json" onchange="importJSON(event)" style="width: 100%;">
+        <div class="card">
+            <div class="input-group">
+                <input type="text" id="plan-input" placeholder="新增目標/計畫...">
+                <button onclick="addPlan()">目標</button>
+            </div>
+            <div id="plan-list"></div>
+        </div>
     </div>
-</div>
 
-<!-- Tab Bar -->
-<div class="tab-bar">
-    <div class="tab-item active" onclick="switchView('quick', this)">
-        <div class="tab-icon">📝</div>
-        <span>隨記</span>
+    <!-- 4. 今日時間軸 -->
+    <div id="view-timeline" class="view">
+        <div class="header">今日時間軸</div>
+        
+        <div class="timeline-controls">
+            <div class="control-row">
+                <div class="mode-toggle">
+                    <button class="mode-btn active" id="btn-weekday" onclick="switchTimelineMode('weekday')">💼 工作日</button>
+                    <button class="mode-btn" id="btn-weekend" onclick="switchTimelineMode('weekend')">☕ 假日</button>
+                </div>
+                <button class="btn-sm" style="background: var(--accent-purple);" onclick="autoFillSchedule()">⚡ 自動帶入事項</button>
+            </div>
+            <div class="control-row">
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn-sm btn-secondary" onclick="undoTimeline()">↩️ 上一步</button>
+                    <button class="btn-sm btn-danger" onclick="resetTimeline()">🔄 重置時間軸</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            📌 <strong>使用說明：</strong><br>
+            1. <strong>拖拉排序：</strong>長按左側圖示可拖拉對調時間軸順序。<br>
+            2. <strong>固定作息：</strong>預設已代入 06:30 盥洗、07:00 冥想、07:15 出發上班、12:45 午睡、17:15 下班、22:30 洗澡、22:45 看書。
+        </div>
+
+        <div class="card" style="padding: 8px 12px;">
+            <div class="timeline" id="timeline-container"></div>
+        </div>
     </div>
-    <div class="tab-item" onclick="switchView('matrix', this)">
-        <div class="tab-icon">🎯</div>
-        <span>矩陣</span>
+
+    <!-- 5. Google 日曆檢視 -->
+    <div id="view-calendar" class="view">
+        <div class="header">Google 日曆</div>
+        
+        <div class="card">
+            <h3 style="font-size: 16px; margin-bottom: 8px;">📅 快速前往 Google 日曆</h3>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.4;">
+                點擊下方按鈕直接開啟 Google Calendar：
+            </p>
+
+            <a href="https://calendar.google.com/" target="_blank" class="cal-btn-large" style="background: var(--accent-blue);">
+                📅 開啟 Google 日曆網頁版
+            </a>
+            
+            <a href="googlecalendar://" class="cal-btn-large" style="background: var(--accent-green);">
+                📱 開啟 Google Calendar App
+            </a>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size: 15px; margin-bottom: 8px;">💡 公開日曆嵌入設定</h3>
+            <div class="input-group" style="margin-bottom: 8px;">
+                <input type="text" id="gcal-url-input" placeholder="https://calendar.google.com/calendar/embed?src=...">
+                <button onclick="saveGCalUrl()">載入</button>
+            </div>
+        </div>
+
+        <div id="gcal-container" class="card" style="padding: 0; overflow: hidden; display: none;">
+            <iframe id="gcal-iframe" style="width:100%; height:450px; border:none;" src="" frameborder="0" scrolling="no"></iframe>
+        </div>
     </div>
-    <div class="tab-item" onclick="switchView('plan', this)">
-        <div class="tab-icon">📅</div>
-        <span>計畫</span>
+
+    <!-- 6. 設定與雲端同步 -->
+    <div id="view-settings" class="view">
+        <div class="header">系統設定與雲端同步</div>
+        
+        <!-- 雲端同步狀態卡片 -->
+        <div class="card">
+            <h3 style="font-size: 16px; margin-bottom: 8px;">☁️ Firebase 雲端自動同步</h3>
+            <div id="sync-status" class="sync-badge">
+                <span class="sync-dot"></span>
+                <span id="sync-text">未設定雲端同步 (離線單機版)</span>
+            </div>
+
+            <div style="margin-top: 10px;">
+                <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">1. 貼上 Firebase Config (JSON 或物件語法)</label>
+                <textarea id="firebase-config-input" rows="4" placeholder='{ "apiKey": "...", "authDomain": "...", "databaseURL": "...", "projectId": "..." }'></textarea>
+            </div>
+
+            <div style="margin-top: 8px;">
+                <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">2. 設定同步金鑰 / 帳號名稱 (跨裝置請填寫相同金鑰)</label>
+                <div class="input-group">
+                    <input type="password" id="sync-key-input" placeholder="例如：my-secret-key-123">
+                    <button onclick="saveFirebaseSettings()">開啓同步</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 本機備份 -->
+        <div class="card">
+            <h3 style="font-size: 16px; margin-bottom: 8px;">📲 本機檔案備份與匯入</h3>
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <button onclick="exportData('json')" style="flex: 1;">匯出備份 (JSON)</button>
+                <button onclick="exportData('csv')" style="flex: 1; background: var(--accent-green);">匯出報表 (CSV)</button>
+            </div>
+            <input type="file" id="import-file-input" accept=".json" onchange="importJSON(event)" style="width: 100%;">
+        </div>
     </div>
-    <div class="tab-item" onclick="switchView('timeline', this)">
-        <div class="tab-icon">⏳</div>
-        <span>時間軸</span>
-    </div>
-    <div class="tab-item" onclick="switchView('calendar', this)">
-        <div class="tab-icon">📆</div>
-        <span>日曆</span>
-    </div>
-    <div class="tab-item" onclick="switchView('settings', this)">
-        <div class="tab-icon">⚙️</div>
-        <span>設定</span>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <div class="tab-item active" onclick="switchView('quick', this)">
+            <div class="tab-icon">📝</div>
+            <span>隨記</span>
+        </div>
+        <div class="tab-item" onclick="switchView('matrix', this)">
+            <div class="tab-icon">🎯</div>
+            <span>矩陣</span>
+        </div>
+        <div class="tab-item" onclick="switchView('plan', this)">
+            <div class="tab-icon">📅</div>
+            <span>計畫</span>
+        </div>
+        <div class="tab-item" onclick="switchView('timeline', this)">
+            <div class="tab-icon">⏳</div>
+            <span>時間軸</span>
+        </div>
+        <div class="tab-item" onclick="switchView('calendar', this)">
+            <div class="tab-icon">📆</div>
+            <span>日曆</span>
+        </div>
+        <div class="tab-item" onclick="switchView('settings', this)">
+            <div class="tab-icon">⚙️</div>
+            <span>設定</span>
+        </div>
     </div>
 </div>
 
@@ -602,7 +647,6 @@
         try {
             let configObj;
             if (typeof state.firebaseConfig === 'string') {
-                // 相容帶有 JS 物件語法或 JSON 的輸入
                 let formatted = state.firebaseConfig.trim();
                 if (!formatted.startsWith('{')) formatted = '{' + formatted + '}';
                 configObj = eval('(' + formatted + ')');
@@ -617,7 +661,6 @@
             const sanitizedKey = state.syncKey.replace(/[^a-zA-Z0-9_-]/g, '_');
             dbRef = firebase.database().ref('users/' + sanitizedKey);
 
-            // 監聽雲端資料即時變更
             dbRef.on('value', (snapshot) => {
                 const remoteData = snapshot.val();
                 if (remoteData) {
@@ -629,7 +672,6 @@
                     isRemoteUpdating = false;
                     updateSyncBadge(true, '已連線雲端同步');
                 } else {
-                    // 若雲端無資料，上傳本機資料建立初始化
                     syncToCloud();
                     updateSyncBadge(true, '已連線雲端 (初始化資料)');
                 }
@@ -657,7 +699,6 @@
 
     function syncToCloud() {
         if (dbRef && !isRemoteUpdating) {
-            // 上傳資料時排除敏感金鑰設定本身
             const dataToSync = Object.assign({}, state);
             delete dataToSync.firebaseConfig;
             delete dataToSync.syncKey;
@@ -688,7 +729,6 @@
         alert('Firebase 雲端設定已儲存並嘗試連線！');
     }
 
-    // 時間軸狀態復原與重置
     function saveTimelineState() {
         timelineHistory.push(JSON.stringify(state.timeline[currentTimelineMode]));
         if (timelineHistory.length > 15) timelineHistory.shift();
@@ -714,7 +754,6 @@
         }
     }
 
-    // 切換頁籤
     function switchView(viewId, el) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
@@ -743,7 +782,6 @@
         initTimeline();
     }
 
-    // 隨記與例行事項
     function addQuickNote() {
         const input = document.getElementById('quick-input');
         if (!input.value.trim()) return;
@@ -784,7 +822,6 @@
         saveData();
     }
 
-    // 計畫
     function addPlan() {
         const input = document.getElementById('plan-input');
         if (!input.value.trim()) return;
@@ -799,7 +836,6 @@
         saveData();
     }
 
-    // 時間軸
     function initTimeline() {
         const container = document.getElementById('timeline-container');
         container.innerHTML = '';
@@ -929,7 +965,6 @@
         alert(`已根據優先級成功將 ${poolIndex} 項任務自動安排至時間軸！`);
     }
 
-    // Google 日曆
     function saveGCalUrl() {
         const urlInput = document.getElementById('gcal-url-input').value.trim();
         state.gcalUrl = urlInput;
@@ -951,7 +986,6 @@
         }
     }
 
-    // 本機備份 / 匯入
     function exportData(type) {
         const nowStr = new Date().toISOString().slice(0, 10);
         if (type === 'json') {
@@ -1012,7 +1046,6 @@
         }
     }
 
-    // Render UI
     function renderQuickNotes() {
         const list = document.getElementById('quick-list');
         list.innerHTML = '';
@@ -1106,3 +1139,5 @@
         initFirebase();
     };
 </script>
+</body>
+</html>
