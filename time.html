@@ -49,7 +49,9 @@
             user-select: none;
         }
 
-        /* 預設為行動端/小螢幕滿版版型 */
+        /* -------------------------------------------------- */
+        /* 手機模式（預設）：滿版 App 體驗                      */
+        /* -------------------------------------------------- */
         body {
             background-color: var(--bg-primary);
             color: var(--text-primary);
@@ -58,6 +60,28 @@
             width: 100%;
             margin: 0 auto;
             min-height: 100vh;
+        }
+
+        .app-wrapper {
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: var(--bg-secondary);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 0.5px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding-top: 8px;
+            padding-bottom: max(env(safe-area-inset-bottom), 8px);
+            z-index: 1000;
         }
 
         /* -------------------------------------------------- */
@@ -76,39 +100,27 @@
             .app-wrapper {
                 width: 100%;
                 max-width: 900px;
+                min-height: auto;
                 background-color: var(--bg-primary);
                 border-radius: 20px;
                 box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
                 overflow: hidden;
                 position: relative;
-                padding-bottom: 80px; /* 給底部 Tab 空間 */
+                padding-bottom: 70px;
             }
 
             .tab-bar {
-                position: absolute !important;
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
                 border-bottom-left-radius: 20px;
                 border-bottom-right-radius: 20px;
+                padding-bottom: 8px;
             }
         }
 
-        .tab-bar {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            max-width: 900px;
-            background: var(--bg-secondary);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-top: 0.5px solid var(--border-color);
-            display: flex;
-            justify-content: space-around;
-            padding-top: 8px;
-            padding-bottom: env(safe-area-inset-bottom);
-            z-index: 1000;
-        }
-
+        /* 通用元件樣式 */
         .tab-item {
             display: flex;
             flex-direction: column;
@@ -171,7 +183,7 @@
             border: 1px solid var(--border-color);
             background: var(--bg-primary);
             color: var(--text-primary);
-            font-size: 16px; /* 設為 16px 防止 iOS Safari 自動對焦點放大 */
+            font-size: 16px;
             outline: none;
         }
 
@@ -364,7 +376,6 @@
             color: white;
         }
 
-        /* Sync Status Pill */
         .sync-badge {
             display: inline-flex;
             align-items: center;
@@ -480,7 +491,7 @@
             </div>
             <div class="control-row">
                 <div style="display: flex; gap: 6px;">
-                    <button class="btn-sm btn-secondary" onclick="undoTimeline()">↩️ 上一步</button>
+                    <button class="btn-sm btn-secondary" onclick="undoTimeline()">↩ 上一步</button>
                     <button class="btn-sm btn-danger" onclick="resetTimeline()">🔄 重置時間軸</button>
                 </div>
             </div>
@@ -533,7 +544,6 @@
     <div id="view-settings" class="view">
         <div class="header">系統設定與雲端同步</div>
         
-        <!-- 雲端同步狀態卡片 -->
         <div class="card">
             <h3 style="font-size: 16px; margin-bottom: 8px;">☁️ Firebase 雲端自動同步</h3>
             <div id="sync-status" class="sync-badge">
@@ -555,7 +565,6 @@
             </div>
         </div>
 
-        <!-- 本機備份 -->
         <div class="card">
             <h3 style="font-size: 16px; margin-bottom: 8px;">📲 本機檔案備份與匯入</h3>
             <div style="display: flex; gap: 8px; margin-bottom: 10px;">
@@ -596,7 +605,6 @@
 </div>
 
 <script>
-    // 全局狀態管理
     let state = JSON.parse(localStorage.getItem('time_app_data')) || {
         quickNotes: [],
         routines: [],
@@ -637,7 +645,6 @@
         }
     };
 
-    // 初始化 Firebase 同步機制
     function initFirebase() {
         if (!state.firebaseConfig || !state.syncKey) {
             updateSyncBadge(false, '未設定雲端同步 (離線單機版)');
