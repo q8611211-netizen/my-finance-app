@@ -361,7 +361,6 @@
             <img id="loginAvatar" src="https://img.icons8.com/color/96/corgi.png" class="theme-avatar" alt="Avatar">
             <h1 style="font-size: 20px; color: var(--accent-theme); margin-bottom: 12px;" id="loginTitle">財務管理助手 Pro</h1>
             
-            <!-- 主題切換選單 (已移除 蠟筆小新、咖波、蜘蛛人) -->
             <div class="form-group" style="text-align: left;">
                 <label>選擇 App 主題風格 🎨</label>
                 <select id="themeSelect" onchange="changeTheme(this.value)">
@@ -426,7 +425,7 @@
             <!-- 用戶功能視圖 -->
             <div id="userSection">
 
-                <!-- 情侶拆帳儀表板卡片 (全頁面共用顯示) -->
+                <!-- 情侶拆帳儀表板卡片 -->
                 <div class="card couple-card" id="debtDashboardCard">
                     <h2>💕 情侶拆帳與債務現況</h2>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -456,7 +455,6 @@
 
                         <div class="form-group"><label>中獎發票</label><input type="number" id="incLottery" value="0" oninput="calcIncome()"></div>
                         
-                        <!-- 用戶2專屬每月固定還款給用戶1配額 -->
                         <div class="form-group" id="repayGroup" style="display:none; background:rgba(253, 121, 168, 0.1); padding:10px; border-radius:10px; border:1px solid var(--couple-accent);">
                             <label style="color:#D63031; font-weight:bold;">💖 本月還款給用戶1之配額</label>
                             <input type="number" id="incRepayToUser1" value="0" oninput="calcIncome()" placeholder="請輸入本月欲還款金額">
@@ -513,7 +511,6 @@
                             <input type="number" id="expAmount" placeholder="0">
                         </div>
 
-                        <!-- 情侶拆帳分攤模式 -->
                         <div class="form-group" style="background:rgba(253, 121, 168, 0.1); padding:8px; border-radius:8px; border:1px solid #FFD1DC;">
                             <label style="color:#D63031; font-weight:bold;">💕 支付與分攤方式</label>
                             <select id="expSplitType">
@@ -590,9 +587,22 @@
                     </div>
                 </div>
 
-                <!-- 5. 用戶設定 -->
+                <!-- 5. 用戶設定與跨裝置移轉 -->
                 <div id="tabSettings" class="tab-content">
+                    <!-- 跨裝置全站資料備份與還原卡片 -->
                     <div class="card" style="border-color: var(--primary);">
+                        <h2>📲 跨裝置資料同步 (全站備份與還原)</h2>
+                        <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 12px;">若要更換手機或在其他裝置使用，請先點擊「導出全站完整備份」，並在另一台裝置上選擇該檔進行「導入還原」。</p>
+                        
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <button class="btn-primary" style="background:var(--accent-theme);" onclick="exportFullStateBackup()">📤 導出全站完整備份 (JSON)</button>
+                            
+                            <button class="btn-primary" style="background:var(--success);" onclick="document.getElementById('importFullBackupInput').click()">📥 導入全站備份並還原</button>
+                            <input type="file" id="importFullBackupInput" style="display:none;" accept=".json" onchange="importFullStateBackup(event)">
+                        </div>
+                    </div>
+
+                    <div class="card">
                         <h2>📥 8/10 至今消費紀錄批次匯入專區</h2>
                         <p style="font-size: 12px; color: var(--secondary-text); margin-bottom: 12px;">你可以直接選擇載入歷史紀錄 JSON 檔，或在下方輸入框貼上文字批次匯入。</p>
                         
@@ -665,7 +675,6 @@
     <script>
         const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{6,}$/;
 
-        // 主題配置檔 (已移除 蠟筆小新、咖波、蜘蛛人)
         const THEME_CONFIG = {
             corgi: {
                 name: '柯基犬',
@@ -727,7 +736,6 @@
         }
 
         function changeTheme(themeKey) {
-            // 如果儲存的主題被移除了，自動 fallback 到 corgi
             if (!THEME_CONFIG[themeKey]) themeKey = 'corgi';
             state.theme = themeKey;
             document.body.setAttribute('data-theme', themeKey);
@@ -739,7 +747,6 @@
             document.getElementById('floatMascotBtn').innerText = cfg.mascot;
             document.getElementById('themeSelect').value = themeKey;
 
-            // 更新頁面動態 Icon
             document.querySelectorAll('.theme-icon').forEach(el => {
                 el.innerText = cfg.mascot;
             });
@@ -1708,7 +1715,7 @@
                 const secNames = { needs: '生活必須', invest: '投資理財', emergency: '緊急儲備' };
 
                 if (data.expenses.length === 0) {
-                    csvContent += `無該月份記帳明細,,,,,,\n`;
+                    csvContent += `無該月份記帳明细,,,,,\n`;
                 } else {
                     data.expenses.forEach(e => {
                         csvContent += `"${e.date}","${secNames[e.section] || e.section}","${e.category}","${e.splitType || 'self'}","${e.note.replace(/"/g, '""')}",${e.amount},${e.rawAmount || e.amount}\n`;
@@ -1814,6 +1821,42 @@
                 renderStats();
                 renderHistoryDatabase();
                 alert(`已成功復原 ${restoredObj.month} 的所有記帳資料！✨`);
+            }
+        }
+
+        /* --- 跨裝置全站資料導出與導入還原邏輯 --- */
+        function exportFullStateBackup() {
+            const dateStr = new Date().toISOString().split('T')[0];
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `財務助手_全站完整備份_${dateStr}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importFullStateBackup(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    const importedState = JSON.parse(e.target.result);
+                    if (importedState && typeof importedState === 'object' && Array.isArray(importedState.users) && Array.isArray(importedState.expenses)) {
+                        if (confirm('確定要導入此全站備份？這將會覆蓋當前裝置上的所有數據！')) {
+                            state = importedState;
+                            saveState();
+                            alert('全站資料已成功還原！系統將自動重新整理頁面。✨');
+                            window.location.reload();
+                        }
+                    } else {
+                        alert('備份檔案格式無效，請確認是否為財務助手導出的完整備份 JSON 檔案。');
+                    }
+                } catch (err) {
+                    alert('無法解析備份 JSON 檔案，請確認檔案格式是否正確。');
+                }
+            };
+            if (event.target.files[0]) {
+                fileReader.readAsText(event.target.files[0]);
             }
         }
 
