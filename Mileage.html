@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>里程數追蹤助手</title>
+
+    <!-- iOS PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="里程數追蹤">
+    <meta name="theme-color" content="#f2f2f7">
+
+    <!-- App Icon for iOS -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23007AFF'/><text x='50' y='65' font-size='50' text-anchor='middle' fill='white'>⛽</text></svg>">
+
+    <style>
+        :root {
+            --bg-color: #f2f2f7;
+            --card-bg: #ffffff;
+            --text-color: #000000;
+            --secondary-text: #8e8e93;
+            --accent-color: #007aff;
+            --danger-color: #ff3b30;
+            --warning-color: #ff9500;
+            --success-color: #34c759;
+            --border-color: #c6c6c8;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #000000;
+                --card-bg: #1c1c1e;
+                --text-color: #ffffff;
+                --secondary-text: #8e8e93;
+                --border-color: #38383a;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 20px) 16px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .input-card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="number"], input[type="text"] {
+            flex: 1;
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 16px;
+            color: var(--text-color);
+            outline: none;
+        }
+
+        .btn-add {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-add:active {
+            opacity: 0.8;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .status-normal { background: rgba(52, 199, 89, 0.15); color: var(--success-color); }
+        .status-warning { background: rgba(255, 149, 0, 0.15); color: var(--warning-color); }
+        .status-danger { background: rgba(255, 59, 48, 0.15); color: var(--danger-color); }
+
+        .progress-container {
+            background: var(--bg-color);
+            height: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent-color);
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        .card-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: var(--secondary-text);
+            margin-bottom: 12px;
+        }
+
+        .card-info span strong {
+            color: var(--text-color);
+            font-size: 18px;
+        }
+
+        .action-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn-reset {
+            width: 100%;
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-color);
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-reset:active {
+            background: rgba(255, 59, 48, 0.2);
+        }
+
+        .btn-secondary {
+            background: var(--bg-color);
+            color: var(--accent-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-secondary:active {
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .alert-banner {
+            display: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 8px;
+            font-weight: 500;
+        }
+
+        .alert-warning { background: rgba(255, 149, 0, 0.15); color: var(--warning-color); display: block; }
+        .alert-danger { background: rgba(255, 59, 48, 0.15); color: var(--danger-color); display: block; }
+
+        /* 歷史紀錄區域樣式 */
+        .history-section {
+            margin-top: 12px;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 10px;
+        }
+
+        .history-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--secondary-text);
+            margin-bottom: 6px;
+        }
+
+        .history-list {
+            max-height: 120px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .history-time {
+            color: var(--secondary-text);
+        }
+
+        .history-detail {
+            font-weight: 500;
+        }
+
+        /* 資料管理工具區 */
+        .tools-card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .db-drawer {
+            display: none;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .db-drawer.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>里程數追蹤助手</h1>
+    </header>
+
+    <div class="input-card">
+        <div class="input-group">
+            <input type="number" id="addKmInput" placeholder="輸入新增里程 (km)" inputmode="decimal">
+            <button class="btn-add" onclick="addDistance()">新增</button>
+        </div>
+    </div>
+
+    <!-- 1. 加油區塊 -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">⛽ 加油紀錄</span>
+            <span id="fuelBadge" class="status-badge status-normal">正常</span>
+        </div>
+        <div class="card-info">
+            <span>當前：<strong id="fuelKm">0</strong> / 170 km</span>
+            <span id="fuelRemain">剩餘 170 km</span>
+        </div>
+        <div class="progress-container">
+            <div id="fuelBar" class="progress-bar" style="width: 0%;"></div>
+        </div>
+        <div id="fuelAlert" class="alert-banner"></div>
+        <button class="btn-reset" onclick="resetTrack('fuel')" style="margin-top: 8px;">歸零 (已加油)</button>
+        
+        <div class="history-section">
+            <div class="history-title">最近加油紀錄</div>
+            <div id="fuelHistory" class="history-list"></div>
+        </div>
+    </div>
+
+    <!-- 2. 機油區塊 -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🛢️ 機油保養</span>
+            <span id="oilBadge" class="status-badge status-normal">正常</span>
+        </div>
+        <div class="card-info">
+            <span>當前：<strong id="oilKm">0</strong> / 800 km</span>
+            <span id="oilRemain">剩餘 800 km</span>
+        </div>
+        <div class="progress-container">
+            <div id="oilBar" class="progress-bar" style="width: 0%;"></div>
+        </div>
+        <div id="oilAlert" class="alert-banner"></div>
+        <button class="btn-reset" onclick="resetTrack('oil')" style="margin-top: 8px;">歸零 (已換機油)</button>
+        
+        <div class="history-section">
+            <div class="history-title">最近機油保養紀錄</div>
+            <div id="oilHistory" class="history-list"></div>
+        </div>
+    </div>
+
+    <!-- 3. 總里程數區塊 -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🛠️ 總里程 / 大保養</span>
+            <span id="mainBadge" class="status-badge status-normal">正常</span>
+        </div>
+        <div class="card-info">
+            <span>總里程：<strong id="totalKm">0</strong> km</span>
+            <span>距保養：<strong id="mainRemain">10000</strong> km</span>
+        </div>
+        <div class="progress-container">
+            <div id="mainBar" class="progress-bar" style="width: 0%;"></div>
+        </div>
+        <div id="mainAlert" class="alert-banner"></div>
+        <div class="action-group">
+            <button class="btn-add" onclick="recordMaintenance()" style="padding: 8px; font-size: 14px;">紀錄大保養項目</button>
+            <button class="btn-reset" onclick="resetTrack('total')">歸零總里程 (二次確認預防)</button>
+        </div>
+        
+        <div class="history-section">
+            <div class="history-title">最近大保養紀錄</div>
+            <div id="totalHistory" class="history-list"></div>
+        </div>
+    </div>
+
+    <!-- 4. 資料庫與跨裝置管理 -->
+    <div class="tools-card">
+        <div class="card-title">📦 資料管理與歸檔庫</div>
+        <div class="tools-grid">
+            <button class="btn-secondary" onclick="archiveData()">資料彙整歸檔</button>
+            <button class="btn-secondary" onclick="exportBackup()">備份下載 JSON</button>
+            <button class="btn-secondary" onclick="document.getElementById('importFileInput').click()">匯入備份資料</button>
+            <button class="btn-secondary" onclick="toggleDatabase()">檢視歷史資料庫</button>
+        </div>
+        <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importBackup(event)">
+
+        <!-- 歸檔資料庫顯示區 -->
+        <div id="dbDrawer" class="db-drawer">
+            <div class="history-title">🗄️ 歸檔資料庫 (存檔清單)</div>
+            <div id="archiveDbList" class="history-list" style="max-height: 200px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化資料結構
+        let state = {
+            totalKm: 0,
+            fuelKm: 0,
+            oilKm: 0,
+            fuelHistory: [],
+            oilHistory: [],
+            totalHistory: [],
+            database: [] // 彙整歸檔資料庫
+        };
+
+        // 格式化當前時間 (YYYY-MM-DD HH:mm)
+        function getFormattedDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
+        }
+
+        // 載入 LocalStorage 資料
+        function loadData() {
+            const saved = localStorage.getItem('mileage_tracker_data');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state = {
+                    totalKm: parsed.totalKm || 0,
+                    fuelKm: parsed.fuelKm || 0,
+                    oilKm: parsed.oilKm || 0,
+                    fuelHistory: parsed.fuelHistory || [],
+                    oilHistory: parsed.oilHistory || [],
+                    totalHistory: parsed.totalHistory || [],
+                    database: parsed.database || []
+                };
+            }
+            render();
+        }
+
+        // 儲存至 LocalStorage
+        function saveData() {
+            localStorage.setItem('mileage_tracker_data', JSON.stringify(state));
+        }
+
+        // 新增里程
+        function addDistance() {
+            const input = document.getElementById('addKmInput');
+            const val = parseFloat(input.value);
+
+            if (isNaN(val) || val <= 0) {
+                alert('請輸入有效的里程數字');
+                return;
+            }
+
+            const timeStamp = getFormattedDate();
+            state.totalKm += val;
+            state.fuelKm += val;
+            state.oilKm += val;
+
+            // 紀錄里程增加歷史
+            state.fuelHistory.unshift({ time: timeStamp, detail: `新增 +${val} km (累計 ${state.fuelKm.toFixed(1)} km)` });
+            state.oilHistory.unshift({ time: timeStamp, detail: `新增 +${val} km (累計 ${state.oilKm.toFixed(1)} km)` });
+
+            input.value = '';
+            input.blur();
+
+            saveData();
+            render();
+        }
+
+        // 紀錄大保養項目
+        function recordMaintenance() {
+            const item = prompt('請輸入大保養項目（例如：更換皮帶、火星塞、水箱精）：');
+            if (item && item.trim() !== '') {
+                const timeStamp = getFormattedDate();
+                state.totalHistory.unshift({
+                    time: timeStamp,
+                    detail: `保養項目: ${item.trim()} (總里程: ${state.totalKm.toFixed(1)} km)`
+                });
+                saveData();
+                render();
+            }
+        }
+
+        // 歸零功能 (含防呆預防機制)
+        function resetTrack(type) {
+            const timeStamp = getFormattedDate();
+
+            if (type === 'fuel') {
+                if (confirm('確定要歸零加油里程嗎？')) {
+                    state.fuelHistory.unshift({ time: timeStamp, detail: `加油歸零 (上次行駛 ${state.fuelKm.toFixed(1)} km)` });
+                    state.fuelKm = 0;
+                }
+            } else if (type === 'oil') {
+                const item = prompt('請輸入本次機油保養項目/品牌（可留空）：', '更換機油/齒輪油');
+                if (item !== null) {
+                    const itemText = item.trim() !== '' ? item.trim() : '更換機油';
+                    state.oilHistory.unshift({ time: timeStamp, detail: `${itemText} (里程: ${state.oilKm.toFixed(1)} km)` });
+                    state.oilKm = 0;
+                }
+            } else if (type === 'total') {
+                // 總里程歸零二次確認防呆機制
+                const firstConfirm = confirm('⚠️ 警告：總里程數為全車重要數據，您確定要歸零總里程嗎？');
+                if (firstConfirm) {
+                    const secondConfirm = confirm('🚨 二次確認：此操作無法復原，確定清空所有總里程累積與紀錄？');
+                    if (secondConfirm) {
+                        state.totalHistory.unshift({ time: timeStamp, detail: `總里程重置歸零 (重置前總里程: ${state.totalKm.toFixed(1)} km)` });
+                        state.totalKm = 0;
+                    }
+                }
+            }
+            saveData();
+            render();
+        }
+
+        // 資料彙整歸檔：將當前介面過冗長的紀錄移至 database
+        function archiveData() {
+            if (state.fuelHistory.length === 0 && state.oilHistory.length === 0 && state.totalHistory.length === 0) {
+                alert('目前主介面無需要彙整的紀錄。');
+                return;
+            }
+
+            if (confirm('確定將當前介面的所有歷史紀錄打包彙整至歸檔資料庫嗎？介面將恢復簡潔。')) {
+                const timeStamp = getFormattedDate();
+                const archiveBatch = {
+                    archiveTime: timeStamp,
+                    fuelHistory: [...state.fuelHistory],
+                    oilHistory: [...state.oilHistory],
+                    totalHistory: [...state.totalHistory]
+                };
+
+                state.database.unshift(archiveBatch);
+
+                // 清空主介面歷史
+                state.fuelHistory = [];
+                state.oilHistory = [];
+                state.totalHistory = [];
+
+                saveData();
+                render();
+                alert('彙整完成！資料已安全歸檔至歷史資料庫。');
+            }
+        }
+
+        // 跨裝置備份：下載 JSON
+        function exportBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const downloadAnchor = document.createElement('a');
+            const fileName = `mileage_backup_${getFormattedDate().replace(/[: ]/g, '_')}.json`;
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", fileName);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // 跨裝置備份：匯入 JSON
+        function importBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedState = JSON.parse(e.target.result);
+                    if (importedState && typeof importedState.totalKm === 'number') {
+                        if (confirm('確定要匯入此備份檔嗎？這將會覆蓋您目前的紀錄！')) {
+                            state = importedState;
+                            saveData();
+                            render();
+                            alert('備份資料匯入成功！');
+                        }
+                    } else {
+                        alert('檔案格式不正確，請選擇有效的備份 JSON 檔。');
+                    }
+                } catch (err) {
+                    alert('讀取檔案失敗：' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // 清空 input 讓重複選取時能觸發
+        }
+
+        // 切換資料庫開關
+        function toggleDatabase() {
+            const drawer = document.getElementById('dbDrawer');
+            drawer.classList.toggle('active');
+        }
+
+        // 渲染歷史紀錄列表
+        function renderHistory(elementId, historyArray) {
+            const container = document.getElementById(elementId);
+            if (!historyArray || historyArray.length === 0) {
+                container.innerHTML = '<div class="history-item" style="color:var(--secondary-text);">無歷史紀錄</div>';
+                return;
+            }
+            container.innerHTML = historyArray.slice(0, 10).map(item => `
+                <div class="history-item">
+                    <span class="history-time">${item.time}</span>
+                    <span class="history-detail">${item.detail}</span>
+                </div>
+            `).join('');
+        }
+
+        // 渲染歸檔資料庫列表
+        function renderArchiveDb() {
+            const container = document.getElementById('archiveDbList');
+            if (!state.database || state.database.length === 0) {
+                container.innerHTML = '<div class="history-item" style="color:var(--secondary-text);">尚無歸檔紀錄</div>';
+                return;
+            }
+
+            container.innerHTML = state.database.map((batch, idx) => {
+                const totalCount = batch.fuelHistory.length + batch.oilHistory.length + batch.totalHistory.length;
+                return `
+                    <div class="history-item" style="flex-direction:column; gap:2px; padding:6px 0;">
+                        <div style="display:flex; justify-content:space-between; font-weight:600;">
+                            <span>📁 存檔包 #${state.database.length - idx}</span>
+                            <span class="history-time">${batch.archiveTime}</span>
+                        </div>
+                        <div style="color:var(--secondary-text);">含 ${totalCount} 筆項目 (加油:${batch.fuelHistory.length} / 機油:${batch.oilHistory.length} / 大保養:${batch.totalHistory.length})</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 更新 UI 畫面
+        function render() {
+            // 1. 加油區塊 (170km 滿，165km 提醒)
+            document.getElementById('fuelKm').innerText = state.fuelKm.toFixed(1);
+            const fuelBarPct = Math.min((state.fuelKm / 170) * 100, 100);
+            const fuelBar = document.getElementById('fuelBar');
+            fuelBar.style.width = fuelBarPct + '%';
+            
+            const fuelBadge = document.getElementById('fuelBadge');
+            const fuelAlert = document.getElementById('fuelAlert');
+            const fuelRemain = document.getElementById('fuelRemain');
+
+            if (state.fuelKm >= 170) {
+                fuelBar.style.backgroundColor = 'var(--danger-color)';
+                fuelBadge.className = 'status-badge status-danger';
+                fuelBadge.innerText = '請即刻加油';
+                fuelAlert.className = 'alert-banner alert-danger';
+                fuelAlert.innerText = '⚠️ 里程已達 170 km，請儘速加油！';
+                fuelRemain.innerText = `超額 ${(state.fuelKm - 170).toFixed(1)} km`;
+            } else if (state.fuelKm >= 165) {
+                fuelBar.style.backgroundColor = 'var(--warning-color)';
+                fuelBadge.className = 'status-badge status-warning';
+                fuelBadge.innerText = '準備加油';
+                fuelAlert.className = 'alert-banner alert-warning';
+                fuelAlert.innerText = '⚠️ 已超過 165 km，請準備加油！';
+                fuelRemain.innerText = `剩餘 ${(170 - state.fuelKm).toFixed(1)} km`;
+            } else {
+                fuelBar.style.backgroundColor = 'var(--accent-color)';
+                fuelBadge.className = 'status-badge status-normal';
+                fuelBadge.innerText = '正常';
+                fuelAlert.className = 'alert-banner';
+                fuelRemain.innerText = `剩餘 ${(170 - state.fuelKm).toFixed(1)} km`;
+            }
+
+            // 2. 換機油區塊 (800km 提醒/更換)
+            document.getElementById('oilKm').innerText = state.oilKm.toFixed(1);
+            const oilBarPct = Math.min((state.oilKm / 800) * 100, 100);
+            const oilBar = document.getElementById('oilBar');
+            oilBar.style.width = oilBarPct + '%';
+
+            const oilBadge = document.getElementById('oilBadge');
+            const oilAlert = document.getElementById('oilAlert');
+            const oilRemain = document.getElementById('oilRemain');
+
+            if (state.oilKm >= 800) {
+                oilBar.style.backgroundColor = 'var(--danger-color)';
+                oilBadge.className = 'status-badge status-danger';
+                oilBadge.innerText = '需要更換';
+                oilAlert.className = 'alert-banner alert-danger';
+                oilAlert.innerText = '⚠️ 已達 800 km，請準備更換機油！';
+                oilRemain.innerText = `超額 ${(state.oilKm - 800).toFixed(1)} km`;
+            } else {
+                oilBar.style.backgroundColor = 'var(--accent-color)';
+                oilBadge.className = 'status-badge status-normal';
+                oilBadge.innerText = '正常';
+                oilAlert.className = 'alert-banner';
+                oilRemain.innerText = `剩餘 ${(800 - state.oilKm).toFixed(1)} km`;
+            }
+
+            // 3. 總里程與大保養區塊 (每 10,000km 提醒)
+            document.getElementById('totalKm').innerText = state.totalKm.toFixed(1);
+            const mainCycleKm = state.totalKm % 10000;
+            const mainBarPct = (mainCycleKm / 10000) * 100;
+            const mainBar = document.getElementById('mainBar');
+            mainBar.style.width = mainBarPct + '%';
+
+            const mainBadge = document.getElementById('mainBadge');
+            const mainAlert = document.getElementById('mainAlert');
+            const mainRemain = document.getElementById('mainRemain');
+            const remainToMain = 10000 - mainCycleKm;
+
+            mainRemain.innerText = remainToMain.toFixed(1);
+
+            if (state.totalKm > 0 && mainCycleKm === 0) {
+                mainBar.style.backgroundColor = 'var(--danger-color)';
+                mainBadge.className = 'status-badge status-danger';
+                mainBadge.innerText = '大保養到期';
+                mainAlert.className = 'alert-banner alert-danger';
+                mainAlert.innerText = '⚠️ 總里程已滿萬，請進行大保養！';
+            } else {
+                mainBar.style.backgroundColor = 'var(--accent-color)';
+                mainBadge.className = 'status-badge status-normal';
+                mainBadge.innerText = '正常';
+                mainAlert.className = 'alert-banner';
+            }
+
+            // 渲染三個區域的最近歷史紀錄
+            renderHistory('fuelHistory', state.fuelHistory);
+            renderHistory('oilHistory', state.oilHistory);
+            renderHistory('totalHistory', state.totalHistory);
+
+            // 渲染歸檔資料庫
+            renderArchiveDb();
+        }
+
+        // 初始化
+        window.onload = loadData;
+    </script>
+</body>
+</html>
