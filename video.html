@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>影音收藏庫</title>
+
+  <!-- iOS PWA 必備設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="影音收藏庫">
+  <meta name="referrer" content="no-referrer">
+  <link rel="apple-touch-icon" href="https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=180&auto=format&fit=crop">
+
+  <style>
+    :root {
+      --bg-color: #f2f2f7;
+      --card-bg: #ffffff;
+      --text-color: #1c1c1e;
+      --subtext-color: #8e8e93;
+      --accent-color: #007aff;
+      --danger-color: #ff3b30;
+      --border-color: #e5e5ea;
+      --safe-area-top: env(safe-area-inset-top, 20px);
+      --safe-area-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #000000;
+        --card-bg: #1c1c1e;
+        --text-color: #ffffff;
+        --subtext-color: #8e8e93;
+        --accent-color: #0a84ff;
+        --danger-color: #ff453a;
+        --border-color: #38383a;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding-top: var(--safe-area-top);
+      padding-bottom: calc(var(--safe-area-bottom) + 70px);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 12px 16px;
+      background: var(--card-bg);
+      border-bottom: 0.5px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      color: var(--accent-color);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-icon.plus {
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .container {
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Modal Form */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border-radius: 14px;
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .modal-content h2 {
+      margin-bottom: 16px;
+      font-size: 18px;
+    }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--subtext-color);
+      margin-bottom: 4px;
+    }
+
+    .input-group input, .input-group select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-color);
+      color: var(--text-color);
+      font-size: 15px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-primary { background: var(--accent-color); color: white; }
+    .btn-secondary { background: var(--border-color); color: var(--text-color); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Video Player Modal */
+    .player-container {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: #000;
+    }
+
+    .player-container iframe, .player-container video {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      border: 0;
+    }
+
+    /* Video Grid */
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 16px;
+    }
+
+    .video-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+    }
+
+    .thumbnail-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: #1c1c1e;
+    }
+
+    .thumbnail-wrapper img {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    .video-info {
+      padding: 10px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .video-title {
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 6px;
+    }
+
+    .video-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .video-tag {
+      font-size: 11px;
+      color: var(--subtext-color);
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .action-btn {
+      background: rgba(0,0,0,0.6);
+      color: white;
+      border: none;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-top-right {
+      position: absolute;
+      top: 6px; right: 6px;
+      display: flex;
+      gap: 4px;
+      z-index: 10;
+    }
+
+    /* Tabs Bar */
+    .tab-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: calc(50px + var(--safe-area-bottom));
+      padding-bottom: var(--safe-area-bottom);
+      background: var(--card-bg);
+      border-top: 0.5px solid var(--border-color);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .tab-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 10px;
+      color: var(--subtext-color);
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .tab-item.active { color: var(--accent-color); }
+    .tab-item span { font-size: 20px; margin-bottom: 2px; }
+
+    /* Filter Bar */
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      scrollbar-width: none;
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+
+    .chip {
+      padding: 6px 14px;
+      border-radius: 16px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      font-size: 13px;
+      white-space: nowrap;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+    }
+
+    .chip.active {
+      background: var(--accent-color);
+      color: white;
+      border-color: var(--accent-color);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>影音收藏庫</h1>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="exportData()">匯出</button>
+      <button class="btn-icon" onclick="triggerImport()">匯入</button>
+      <button class="btn-icon plus" onclick="openAddModal()">＋</button>
+    </div>
+  </header>
+
+  <!-- 隱藏的檔案選擇器，用於 JSON 匯入 -->
+  <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+
+  <div class="container">
+    <!-- 播放清單分類篩選 -->
+    <div class="filter-bar" id="filterBar"></div>
+
+    <!-- 影片列表 -->
+    <div class="video-grid" id="videoGrid"></div>
+  </div>
+
+  <!-- 底部 Tab 導覽列 -->
+  <nav class="tab-bar">
+    <button class="tab-item active" onclick="filterByPlaylist('全選')">
+      <span>🎬</span>全部影片
+    </button>
+    <button class="tab-item" onclick="openPlaylistModal()">
+      <span>📂</span>管理播放清單
+    </button>
+  </nav>
+
+  <!-- 新增影片 Modal -->
+  <div class="modal" id="addModal">
+    <div class="modal-content">
+      <h2>新增影片 URL</h2>
+      <div class="input-group">
+        <label>影片 / 網頁連結</label>
+        <input type="text" id="videoUrl" placeholder="https://...">
+      </div>
+      <div class="input-group">
+        <label>影片標題 (選填)</label>
+        <input type="text" id="videoTitle" placeholder="自訂標題">
+      </div>
+      <div class="input-group">
+        <label>自訂封面 (選填，可上傳圖檔/截圖)</label>
+        <input type="file" id="videoFile" accept="image/*" onchange="handleFileSelect(event)">
+      </div>
+      <div class="input-group">
+        <label>加入播放清單</label>
+        <select id="videoPlaylist"></select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('addModal')">取消</button>
+        <button class="btn btn-primary" id="saveBtn" onclick="saveVideo()">儲存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 移動播放清單 Modal -->
+  <div class="modal" id="moveModal">
+    <div class="modal-content">
+      <h2>變更播放清單</h2>
+      <div class="input-group">
+        <label>選擇新的播放清單</label>
+        <select id="movePlaylistSelect"></select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('moveModal')">取消</button>
+        <button class="btn btn-primary" onclick="confirmMovePlaylist()">確認變更</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 管理播放清單 Modal -->
+  <div class="modal" id="playlistModal">
+    <div class="modal-content">
+      <h2>新增播放清單</h2>
+      <div class="input-group">
+        <label>清單名稱</label>
+        <input type="text" id="newPlaylistName" placeholder="例如: 健身、程式教學">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="closeModal('playlistModal')">關閉</button>
+        <button class="btn btn-primary" onclick="createPlaylist()">建立</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 影片播放 Modal -->
+  <div class="modal" id="playerModal">
+    <div class="modal-content">
+      <div class="player-container" id="playerContainer"></div>
+      <h3 id="playerTitle" style="font-size: 15px; margin-bottom: 12px;"></h3>
+      <div class="modal-actions">
+        <button class="btn btn-primary" id="openExternalBtn" style="display:none;" onclick="openExternal()">前往原始網頁</button>
+        <button class="btn btn-secondary" onclick="closePlayer()">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let videos = JSON.parse(localStorage.getItem('my_videos')) || [];
+    let playlists = JSON.parse(localStorage.getItem('my_playlists')) || ['預設'];
+    let currentFilter = '全選';
+    let currentPlayingUrl = '';
+    let uploadedBase64 = '';
+    let editingVideoId = null;
+
+    const DEFAULT_THUMBNAIL = 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=600&auto=format&fit=crop';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderFilters();
+      renderVideos();
+    });
+
+    function getYouTubeId(url) {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = url.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : null;
+    }
+
+    function openAddModal() {
+      uploadedBase64 = '';
+      updatePlaylistDropdown('videoPlaylist');
+      document.getElementById('addModal').classList.add('active');
+    }
+
+    function openPlaylistModal() {
+      document.getElementById('playlistModal').classList.add('active');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    function updatePlaylistDropdown(targetId) {
+      const select = document.getElementById(targetId);
+      select.innerHTML = playlists.map(p => `<option value="${p}">${p}</option>`).join('');
+    }
+
+    function createPlaylist() {
+      const input = document.getElementById('newPlaylistName');
+      const name = input.value.trim();
+      if (name && !playlists.includes(name)) {
+        playlists.push(name);
+        savePlaylists();
+        input.value = '';
+        closeModal('playlistModal');
+        renderFilters();
+      }
+    }
+
+    function savePlaylists() {
+      localStorage.setItem('my_playlists', JSON.stringify(playlists));
+    }
+
+    function saveVideosData() {
+      localStorage.setItem('my_videos', JSON.stringify(videos));
+    }
+
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = function () {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const maxWidth = 450;
+          const scaleSize = maxWidth / img.width;
+          canvas.width = maxWidth;
+          canvas.height = img.height * scaleSize;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          uploadedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
+    async function fetchMetadata(url) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+      try {
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        const data = await res.json();
+        if (!data.contents) return { title: null, thumbnail: null };
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data.contents, 'text/html');
+
+        const titleTag = doc.querySelector('meta[property="og:title"]') || doc.querySelector('title');
+        const title = titleTag ? (titleTag.content || titleTag.innerText) : null;
+
+        const imageTag = doc.querySelector('meta[property="og:image"]');
+        let thumbnail = imageTag ? imageTag.content : null;
+
+        if (thumbnail && !thumbnail.startsWith('http') && !thumbnail.startsWith('data:')) {
+          const urlObj = new URL(url);
+          thumbnail = urlObj.origin + (thumbnail.startsWith('/') ? '' : '/') + thumbnail;
+        }
+
+        return { title, thumbnail };
+      } catch (e) {
+        return { title: null, thumbnail: null };
+      }
+    }
+
+    async function saveVideo() {
+      let url = document.getElementById('videoUrl').value.trim();
+      let title = document.getElementById('videoTitle').value.trim();
+      const playlist = document.getElementById('videoPlaylist').value;
+
+      if (!url) return alert('請輸入影片網址');
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+
+      let thumbnail = uploadedBase64;
+
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true;
+      saveBtn.innerText = '處理中...';
+
+      const youtubeId = getYouTubeId(url);
+
+      if (youtubeId) {
+        if (!thumbnail) thumbnail = `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`;
+        if (!title) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 1500);
+            const res = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            const data = await res.json();
+            title = data.title;
+          } catch {
+            title = 'YouTube 影片';
+          }
+        }
+      } else {
+        if (!title || !thumbnail) {
+          const meta = await fetchMetadata(url);
+          if (!title) title = meta.title || '網路影片';
+          if (!thumbnail) thumbnail = meta.thumbnail || DEFAULT_THUMBNAIL;
+        }
+      }
+
+      const newVideo = {
+        id: Date.now().toString(),
+        youtubeId: youtubeId,
+        url: url,
+        title: title || '網路影片',
+        playlist: playlist,
+        thumbnail: thumbnail || DEFAULT_THUMBNAIL
+      };
+
+      videos.unshift(newVideo);
+      saveVideosData();
+
+      document.getElementById('videoUrl').value = '';
+      document.getElementById('videoTitle').value = '';
+      document.getElementById('videoFile').value = '';
+      uploadedBase64 = '';
+      saveBtn.disabled = false;
+      saveBtn.innerText = '儲存';
+      closeModal('addModal');
+      renderVideos();
+    }
+
+    // 移動已建立影片至新清單
+    function openMoveModal(id, event) {
+      event.stopPropagation();
+      editingVideoId = id;
+      const target = videos.find(v => v.id === id);
+      if (!target) return;
+
+      updatePlaylistDropdown('movePlaylistSelect');
+      document.getElementById('movePlaylistSelect').value = target.playlist;
+      document.getElementById('moveModal').classList.add('active');
+    }
+
+    function confirmMovePlaylist() {
+      const selectedPlaylist = document.getElementById('movePlaylistSelect').value;
+      const target = videos.find(v => v.id === editingVideoId);
+      if (target) {
+        target.playlist = selectedPlaylist;
+        saveVideosData();
+        renderVideos();
+      }
+      closeModal('moveModal');
+    }
+
+    function deleteVideo(id, event) {
+      event.stopPropagation();
+      if (confirm('確定要刪除這支影片嗎？')) {
+        videos = videos.filter(v => v.id !== id);
+        saveVideosData();
+        renderVideos();
+      }
+    }
+
+    function renderFilters() {
+      const filterBar = document.getElementById('filterBar');
+      const allTags = ['全選', ...playlists];
+      filterBar.innerHTML = allTags.map(tag => `
+        <div class="chip ${currentFilter === tag ? 'active' : ''}" onclick="filterByPlaylist('${tag}')">
+          ${tag}
+        </div>
+      `).join('');
+    }
+
+    function filterByPlaylist(tag) {
+      currentFilter = tag;
+      renderFilters();
+      renderVideos();
+    }
+
+    function handleImgError(img, originalUrl) {
+      if (!img.dataset.retried && originalUrl && originalUrl.startsWith('http') && !originalUrl.includes('wsrv.nl')) {
+        img.dataset.retried = 'true';
+        img.src = `https://wsrv.nl/?url=${encodeURIComponent(originalUrl)}`;
+      } else {
+        img.onerror = null;
+        img.src = DEFAULT_THUMBNAIL;
+      }
+    }
+
+    function renderVideos() {
+      const grid = document.getElementById('videoGrid');
+      const filtered = currentFilter === '全選' 
+        ? videos 
+        : videos.filter(v => v.playlist === currentFilter);
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--subtext-color); margin-top: 40px;">尚無影片資料</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(v => `
+        <div class="video-card" onclick="playVideo('${v.id}')">
+          <div class="thumbnail-wrapper">
+            <img src="${v.thumbnail}" alt="thumbnail" onerror="handleImgError(this, '${v.thumbnail}')" loading="lazy">
+            <div class="card-top-right">
+              <button class="action-btn" onclick="openMoveModal('${v.id}', event)" title="移動清單">📂</button>
+              <button class="action-btn" onclick="deleteVideo('${v.id}', event)" title="刪除">✕</button>
+            </div>
+          </div>
+          <div class="video-info">
+            <div class="video-title">${v.title}</div>
+            <div class="video-footer">
+              <span class="video-tag">📌 ${v.playlist}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function playVideo(id) {
+      const item = videos.find(v => v.id === id);
+      if (!item) return;
+
+      currentPlayingUrl = item.url;
+      const container = document.getElementById('playerContainer');
+      const extBtn = document.getElementById('openExternalBtn');
+      document.getElementById('playerTitle').innerText = item.title;
+
+      const isDirectVideo = item.url.match(/\.(mp4|webm|ogg|mov)($|\?)/i);
+
+      if (item.youtubeId) {
+        container.innerHTML = `<iframe src="https://www.youtube.com/embed/${item.youtubeId}?autoplay=1" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+        extBtn.style.display = 'none';
+      } else if (isDirectVideo) {
+        container.innerHTML = `<video src="${item.url}" controls autoplay playsinline></video>`;
+        extBtn.style.display = 'none';
+      } else {
+        container.innerHTML = `<iframe src="${item.url}"></iframe>`;
+        extBtn.style.display = 'inline-block';
+      }
+
+      document.getElementById('playerModal').classList.add('active');
+    }
+
+    function openExternal() {
+      if (currentPlayingUrl) {
+        window.open(currentPlayingUrl, '_blank');
+      }
+    }
+
+    function closePlayer() {
+      document.getElementById('playerContainer').innerHTML = '';
+      document.getElementById('playerModal').classList.remove('active');
+    }
+
+    /* 跨裝置 JSON 匯入／匯出邏輯 */
+    function exportData() {
+      const exportObject = {
+        videos: videos,
+        playlists: playlists,
+        exportAt: new Date().toISOString()
+      };
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObject, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `video_backup_${Date.now()}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function triggerImport() {
+      document.getElementById('importFile').click();
+    }
+
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (imported.videos && Array.isArray(imported.videos)) {
+            videos = imported.videos;
+            saveVideosData();
+          }
+          if (imported.playlists && Array.isArray(imported.playlists)) {
+            playlists = imported.playlists;
+            savePlaylists();
+          }
+          alert('資料匯入成功！');
+          renderFilters();
+          renderVideos();
+        } catch (err) {
+          alert('JSON 格式錯誤，請確保選擇正確的備份檔。');
+        }
+      };
+      reader.readAsText(file);
+    }
+  </script>
+</body>
+</html>
