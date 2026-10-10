@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>財務管理助手 Pro - 精選主題版</title>
+    <title>財務管理助手 Pro - 狗狗主題版</title>
     
     <!-- iOS PWA 全螢幕設定 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -30,55 +30,6 @@
             --accent-theme: #E58E26;
             --couple-accent: #FD79A8;
             --dot-color: #F7D794;
-        }
-
-        /* --- 主題樣式定義 --- */
-        body[data-theme="cat"] {
-            --bg-color: #F7F5FF;
-            --card-bg: #FFFFFF;
-            --text-color: #332C4A;
-            --secondary-text: #82789E;
-            --primary: #A55EEA;
-            --primary-light: #E0C3FC;
-            --border-color: #D6A2E8;
-            --accent-theme: #8854D0;
-            --dot-color: #D6A2E8;
-        }
-
-        body[data-theme="rabbit"] {
-            --bg-color: #FFF0F5;
-            --card-bg: #FFFFFF;
-            --text-color: #4A353B;
-            --secondary-text: #A08088;
-            --primary: #FF78AE;
-            --primary-light: #FFD2E5;
-            --border-color: #FFB6C1;
-            --accent-theme: #E84393;
-            --dot-color: #FFB6C1;
-        }
-
-        body[data-theme="avengers"] {
-            --bg-color: #1A1A24;
-            --card-bg: #252538;
-            --text-color: #F1F1F1;
-            --secondary-text: #A0A0B0;
-            --primary: #E50914;
-            --primary-light: #3D3D5C;
-            --border-color: #FFD700;
-            --accent-theme: #FFD700;
-            --dot-color: #3D3D5C;
-        }
-
-        body[data-theme="amway"] {
-            --bg-color: #F4F9F5;
-            --card-bg: #FFFFFF;
-            --text-color: #1C3F3A;
-            --secondary-text: #5C7F7A;
-            --primary: #00875A;
-            --primary-light: #B8E6D5;
-            --border-color: #82C9B1;
-            --accent-theme: #005A3C;
-            --dot-color: #C8E6DC;
         }
 
         * {
@@ -355,34 +306,19 @@
 </head>
 <body data-theme="corgi">
 
-    <!-- 登入畫面 -->
+    <!-- 登入選擇畫面 (已移除密碼驗證) -->
     <div id="loginView" class="login-overlay">
         <div class="card" style="width: 100%; max-width: 320px; text-align: center;">
             <img id="loginAvatar" src="https://img.icons8.com/color/96/corgi.png" class="theme-avatar" alt="Avatar">
             <h1 style="font-size: 20px; color: var(--accent-theme); margin-bottom: 12px;" id="loginTitle">財務管理助手 Pro</h1>
             
             <div class="form-group" style="text-align: left;">
-                <label>選擇 App 主題風格 🎨</label>
-                <select id="themeSelect" onchange="changeTheme(this.value)">
-                    <option value="corgi">🐶 柯基犬 (Corgi)</option>
-                    <option value="cat">🐱 貓咪 (Cat)</option>
-                    <option value="rabbit">🐰 兔子 (Rabbit)</option>
-                    <option value="avengers">🛡️ 復仇者聯盟 (Avengers)</option>
-                    <option value="amway">🌿 安麗 (Amway)</option>
-                </select>
-            </div>
-
-            <div class="form-group" style="text-align: left;">
-                <label>選擇身分</label>
+                <label>選擇身分進入</label>
                 <select id="loginSelect">
                     <option value="admin">管理者 (Admin)</option>
                 </select>
             </div>
-            <div class="form-group" style="text-align: left;">
-                <label>密碼</label>
-                <input type="password" id="loginPassword" placeholder="請輸入密碼">
-            </div>
-            <button class="btn-primary" onclick="login()">登入助手</button>
+            <button class="btn-primary" onclick="login()">進入助手</button>
         </div>
     </div>
 
@@ -390,7 +326,7 @@
     <div id="appView" style="display: none;">
         <div class="header">
             <h1 id="currentUserTitle"><img id="headerAvatar" src="https://img.icons8.com/color/48/corgi.png" style="width:28px; height:28px; border-radius:50%;"> 財務助手</h1>
-            <button class="logout-btn" onclick="logout()">登出 / 切換 🐾</button>
+            <button class="logout-btn" onclick="logout()">切換身分 🐾</button>
         </div>
 
         <div class="container">
@@ -401,10 +337,6 @@
                     <div class="form-group">
                         <label>用戶名稱</label>
                         <input type="text" id="newUserName" placeholder="請輸入名字">
-                    </div>
-                    <div class="form-group">
-                        <label>密碼 (需包含大小寫英文字母與數字，至少6碼)</label>
-                        <input type="password" id="newUserPassword" placeholder="如: User123">
                     </div>
                     <button class="btn-primary" onclick="addUser()">新增用戶</button>
                 </div>
@@ -425,15 +357,18 @@
             <!-- 用戶功能視圖 -->
             <div id="userSection">
 
-                <!-- 情侶拆帳儀表板卡片 -->
+                <!-- 情侶拆帳儀表板卡片 (用戶二的欠款金額改為手動輸入) -->
                 <div class="card couple-card" id="debtDashboardCard">
                     <h2>💕 情侶拆帳與債務現況</h2>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:14px; color:var(--text-color);">用戶2 尚欠 用戶1：</span>
-                        <span id="debtTotalDisplay" style="font-size:20px; font-weight:800; color:#D63031;">$0</span>
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <span style="font-size:18px; font-weight:800; color:#D63031;">$</span>
+                            <input type="number" id="manualCoupleDebtInput" value="0" oninput="updateManualDebt(this.value)" style="width: 120px; font-size: 18px; font-weight: 800; color: #D63031; text-align: right; padding: 4px;">
+                        </div>
                     </div>
                     <p style="font-size:11px; color:var(--secondary-text); margin-top:4px;">
-                        提示：當雙方記帳選擇「平分」或「幫對方代付」時，系統會自動動態計算並更新金額。
+                        提示：每月可根據雙方總結結果手動調整更新欠款金額，或透過代付/平分自動增減。
                     </p>
                 </div>
 
@@ -454,11 +389,6 @@
                         </div>
 
                         <div class="form-group"><label>中獎發票</label><input type="number" id="incLottery" value="0" oninput="calcIncome()"></div>
-                        
-                        <div class="form-group" id="repayGroup" style="display:none; background:rgba(253, 121, 168, 0.1); padding:10px; border-radius:10px; border:1px solid var(--couple-accent);">
-                            <label style="color:#D63031; font-weight:bold;">💖 本月還款給用戶1之配額</label>
-                            <input type="number" id="incRepayToUser1" value="0" oninput="calcIncome()" placeholder="請輸入本月欲還款金額">
-                        </div>
 
                         <div style="margin-top:12px; font-weight:bold; color:var(--accent-theme); font-size:16px;">總收入：$<span id="totalIncome">0</span></div>
                         
@@ -483,6 +413,12 @@
                         <h3>投資理財 (30%) <span id="valTagInvest" class="validation-tag"></span></h3>
                         <div id="catInvest"></div>
                         <button class="btn-small" onclick="addCategoryPrompt('invest')">+ 新增投資理財項目</button>
+                        
+                        <!-- 用戶二專屬：本月歸還給用戶1之配額（定義在投資理財項目內） -->
+                        <div class="form-group" id="repayGroup" style="display:none; background:rgba(253, 121, 168, 0.1); padding:10px; border-radius:10px; border:1px solid var(--couple-accent); margin-top: 10px;">
+                            <label style="color:#D63031; font-weight:bold;">💖 本月歸還給用戶1之配額 (計入投資理財項目)</label>
+                            <input type="number" id="incRepayToUser1" value="0" oninput="validateBudgetTotals()" placeholder="請輸入本月欲還款金額">
+                        </div>
 
                         <h3>緊急儲備 (10%) <span id="valTagEmergency" class="validation-tag"></span></h3>
                         <div id="catEmergency"></div>
@@ -515,8 +451,8 @@
                             <label style="color:#D63031; font-weight:bold;">💕 支付與分攤方式</label>
                             <select id="expSplitType">
                                 <option value="self">各自自付 (全額算自己的消費)</option>
-                                <option value="split">平分 (AA制，一人一半，自動調整欠款)</option>
-                                <option value="full_pay_for_other">全額代付 (我付錢，買給對方/記在對方帳上)</option>
+                                <option value="split">平分 (AA制，一人一半)</option>
+                                <option value="full_pay_for_other">全額代付 (我付錢，全額算在對方帳上)</option>
                             </select>
                         </div>
 
@@ -673,8 +609,6 @@
     </div>
 
     <script>
-        const PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{6,}$/;
-
         const THEME_CONFIG = {
             corgi: {
                 name: '柯基犬',
@@ -682,34 +616,6 @@
                 mascot: '🐶',
                 subIcon: '🦴',
                 tip: '柯基助手提醒您：每天記帳，邁向財務自由喔！🐾'
-            },
-            cat: {
-                name: '貓咪',
-                icon: 'https://img.icons8.com/color/180/cat.png',
-                mascot: '🐱',
-                subIcon: '🐟',
-                tip: '喵～主子提醒您：錢錢沒有不見，只是變成喜歡的樣子了！🐾'
-            },
-            rabbit: {
-                name: '兔子',
-                icon: 'https://img.icons8.com/color/180/rabbit.png',
-                mascot: '🐰',
-                subIcon: '🥕',
-                tip: '兔兔助手提醒您：養成儲蓄習慣，蹦跳邁向美好生活！🥕'
-            },
-            avengers: {
-                name: '復仇者聯盟',
-                icon: 'https://img.icons8.com/color/180/avengers.png',
-                mascot: '🛡️',
-                subIcon: '⚡',
-                tip: '鋼鐵人提醒您：良好的財務管理才是真正的超級英雄力量！3000次！'
-            },
-            amway: {
-                name: '安麗',
-                icon: 'https://img.icons8.com/color/180/leaf.png',
-                mascot: '🌿',
-                subIcon: '🌱',
-                tip: '安麗助手提醒您：理財就像健康管理，持續耕耘才能收穫豐碩果實！'
             }
         };
 
@@ -735,34 +641,13 @@
             localStorage.setItem('ios_finance_app_v2', JSON.stringify(state));
         }
 
-        function changeTheme(themeKey) {
-            if (!THEME_CONFIG[themeKey]) themeKey = 'corgi';
-            state.theme = themeKey;
-            document.body.setAttribute('data-theme', themeKey);
-
-            const cfg = THEME_CONFIG[themeKey];
-            document.getElementById('loginAvatar').src = cfg.icon;
-            document.getElementById('headerAvatar').src = cfg.icon;
-            document.getElementById('appIcon').href = cfg.icon;
-            document.getElementById('floatMascotBtn').innerText = cfg.mascot;
-            document.getElementById('themeSelect').value = themeKey;
-
-            document.querySelectorAll('.theme-icon').forEach(el => {
-                el.innerText = cfg.mascot;
-            });
-
-            saveState();
-        }
-
         function triggerMascotTip() {
-            const currentTheme = state.theme || 'corgi';
-            const cfg = THEME_CONFIG[currentTheme] || THEME_CONFIG.corgi;
-            alert(cfg.tip);
+            alert('柯基助手提醒您：每天記帳，邁向財務自由喔！🐾');
         }
 
         function init() {
-            if (!state.theme || !THEME_CONFIG[state.theme]) state.theme = 'corgi';
-            changeTheme(state.theme);
+            state.theme = 'corgi';
+            document.body.setAttribute('data-theme', 'corgi');
 
             if (state.coupleDebt === undefined) state.coupleDebt = 0;
             cleanupOldDeletedUsers();
@@ -820,13 +705,8 @@
 
         function login() {
             const val = document.getElementById('loginSelect').value;
-            const pwd = document.getElementById('loginPassword').value;
 
             if (val === 'admin') {
-                if (pwd !== 'admin') {
-                    alert('管理者密碼錯誤！(預設密碼為 admin)');
-                    return;
-                }
                 currentUser = { id: 'admin', name: '管理者' };
                 document.getElementById('adminSection').style.display = 'block';
                 document.getElementById('userSection').style.display = 'none';
@@ -834,8 +714,8 @@
                 renderAdminView();
             } else {
                 const targetUser = state.users.find(u => u.id === val);
-                if (!targetUser || targetUser.password !== pwd) {
-                    alert('密碼錯誤！');
+                if (!targetUser) {
+                    alert('找不到此用戶！');
                     return;
                 }
                 currentUser = targetUser;
@@ -847,9 +727,8 @@
             document.getElementById('loginView').style.display = 'none';
             document.getElementById('appView').style.display = 'block';
             
-            const cfg = THEME_CONFIG[state.theme || 'corgi'] || THEME_CONFIG.corgi;
+            const cfg = THEME_CONFIG.corgi;
             document.getElementById('currentUserTitle').innerHTML = `<img id="headerAvatar" src="${cfg.icon}" style="width:28px; height:28px; border-radius:50%;"> ${currentUser.name} 的助手`;
-            document.getElementById('loginPassword').value = '';
         }
 
         function logout() {
@@ -865,11 +744,9 @@
                 list.innerHTML += `
                     <div class="list-item">
                         <div>
-                            <strong>${u.name} (用戶${idx + 1})</strong><br>
-                            <span style="font-size:12px; color:var(--secondary-text);">密碼: ${u.password}</span>
+                            <strong>${u.name} (用戶${idx + 1})</strong>
                         </div>
                         <div>
-                            <button class="btn-small" onclick="editUserPassword('${u.id}')">修改密碼</button>
                             <button class="btn-small" style="background:var(--danger);" onclick="deleteUser('${u.id}')">刪除</button>
                         </div>
                     </div>
@@ -924,17 +801,11 @@
                 return;
             }
             const nameInput = document.getElementById('newUserName');
-            const pwdInput = document.getElementById('newUserPassword');
             const name = nameInput.value.trim();
-            const pwd = pwdInput.value.trim();
 
             if (!name) { alert('請輸入用戶名稱'); return; }
-            if (!PWD_REGEX.test(pwd)) {
-                alert('密碼格式不符合規定！需包含大小寫英文字母與數字，且長度至少6碼。');
-                return;
-            }
 
-            const newUser = { id: 'user_' + Date.now(), name, password: pwd };
+            const newUser = { id: 'user_' + Date.now(), name };
             state.users.push(newUser);
             
             if (!state.userTemplates) state.userTemplates = {};
@@ -951,22 +822,8 @@
 
             saveState();
             nameInput.value = '';
-            pwdInput.value = '';
             renderAdminView();
-        }
-
-        function editUserPassword(id) {
-            const user = state.users.find(u => u.id === id);
-            const newPwd = prompt(`修改 ${user.name} 的密碼 (須包含大小寫英文字母及數字，至少6碼):`, user.password);
-            if (newPwd) {
-                if (!PWD_REGEX.test(newPwd)) {
-                    alert('密碼格式不符合規定！');
-                    return;
-                }
-                user.password = newPwd;
-                saveState();
-                renderAdminView();
-            }
+            updateLoginDropdown();
         }
 
         function deleteUser(id) {
@@ -989,6 +846,7 @@
                 
                 saveState();
                 renderAdminView();
+                updateLoginDropdown();
             }
         }
 
@@ -1011,6 +869,7 @@
 
                 saveState();
                 renderAdminView();
+                updateLoginDropdown();
                 alert('帳號與歷史數據已完美復原！');
             }
         }
@@ -1027,12 +886,21 @@
             loadUserSettings();
         }
 
+        function isUser1() {
+            return state.users.length > 0 && state.users[0].id === currentUser.id;
+        }
+
         function isUser2() {
             return state.users.length >= 2 && state.users[1].id === currentUser.id;
         }
 
         function renderDebtDashboard() {
-            document.getElementById('debtTotalDisplay').innerText = '$' + (state.coupleDebt || 0);
+            document.getElementById('manualCoupleDebtInput').value = state.coupleDebt || 0;
+        }
+
+        function updateManualDebt(val) {
+            state.coupleDebt = Number(val) || 0;
+            saveState();
         }
 
         function switchTab(tabId, btn) {
@@ -1154,11 +1022,6 @@
 
             let total = s + a + l + bankTotal;
 
-            if (isUser2()) {
-                const repayVal = Number(document.getElementById('incRepayToUser1').value) || 0;
-                total = Math.max(0, total - repayVal);
-            }
-
             document.getElementById('totalIncome').innerText = total;
             document.getElementById('bNeeds').innerText = '$' + Math.round(total * 0.6);
             document.getElementById('bInvest').innerText = '$' + Math.round(total * 0.3);
@@ -1181,9 +1044,15 @@
                 return sum;
             };
 
-            const sumNeeds = getSum('catNeeds');
-            const sumInvest = getSum('catInvest');
-            const sumEmergency = getSum('catEmergency');
+            let sumNeeds = getSum('catNeeds');
+            let sumInvest = getSum('catInvest');
+            let sumEmergency = getSum('catEmergency');
+
+            let repayVal = 0;
+            if (isUser2()) {
+                repayVal = Number(document.getElementById('incRepayToUser1').value) || 0;
+                sumInvest += repayVal;
+            }
 
             const updateTag = (tagId, current, target) => {
                 const el = document.getElementById(tagId);
@@ -1227,10 +1096,6 @@
 
             if (isUser2()) {
                 repayVal = Number(document.getElementById('incRepayToUser1').value) || 0;
-                if (repayVal > 0) {
-                    state.coupleDebt = Math.max(0, state.coupleDebt - repayVal);
-                    renderDebtDashboard();
-                }
             }
 
             const banks = [];
@@ -1278,30 +1143,6 @@
             }
         }
 
-        function applySplitDebtLogic(splitType, rawAmount, undo = false) {
-            if (state.users.length < 2) return;
-
-            const isUser1 = (currentUser.id === state.users[0].id);
-            const multiplier = undo ? -1 : 1;
-
-            if (splitType === 'split') {
-                const half = rawAmount / 2;
-                if (isUser1) {
-                    state.coupleDebt += half * multiplier;
-                } else {
-                    state.coupleDebt -= half * multiplier;
-                }
-            } else if (splitType === 'full_pay_for_other') {
-                if (isUser1) {
-                    state.coupleDebt += rawAmount * multiplier;
-                } else {
-                    state.coupleDebt -= rawAmount * multiplier;
-                }
-            }
-            if (state.coupleDebt < 0) state.coupleDebt = 0;
-            renderDebtDashboard();
-        }
-
         function addExpense() {
             const editId = document.getElementById('editingExpenseId').value;
             const date = document.getElementById('expDate').value;
@@ -1322,16 +1163,59 @@
 
             const [section, category] = catVal.split(':');
 
+            let authorUserId = currentUser.id;
+            let targetUserId = currentUser.id; // 這筆消費要記錄在誰的歷史帳本下
             let actualAmount = rawAmount;
-            if (splitType === 'split') actualAmount = rawAmount / 2;
-            else if (splitType === 'full_pay_for_other') actualAmount = 0;
+            let targetNote = note;
+            let coupleDebtDelta = 0; 
+
+            if (isUser1()) {
+                if (splitType === 'split') {
+                    // 用戶一選擇平分：用戶一自己負擔一半，用戶二負擔一半，記錄在雙方各一筆或用戶二帳上？
+                    // 根據需求3與需求4：
+                    // 用戶一選擇平分，用戶二的消費紀錄必須顯示這筆消費並標註「用戶一代付平分」，金額為全額或一半？
+                    // 根據需求描述：用戶二的消費紀錄顯示這筆消費，金額為實際金額或分擔金額？
+                    // 讓我們梳理邏輯：
+                    // 若用戶一付全額並選擇「平分」：
+                    // 用戶一自己的消費金額 = rawAmount / 2 (自己負擔的一半)
+                    // 同時要在用戶二新增一筆消費紀錄，標註「用戶一代付平分」，金額為 rawAmount / 2 或 rawAmount？
+                    // 由於平分通常代表總額平分，雙方各出一般。因此用戶一自己記帳金額為 rawAmount/2，並在用戶二新增一筆金額為 rawAmount/2 且標註「用戶一代付平分」，且用戶二欠款增加 rawAmount/2。
+                    // 讓我們精確對應需求：
+                    // 1. 用戶一選擇全額代付 -> 用戶一自己金額 = 0，用戶二新增一筆金額 = rawAmount，標註「用戶一協助全額代付」，且用戶二欠款增加 rawAmount。
+                    // 2. 用戶二選擇全額代付 -> 用戶二自己金額 = 0，用戶一新增一筆金額 = rawAmount，標註「用戶二協助全額代付」，且用戶二欠款減少 rawAmount。
+                    // 3. 用戶一選擇平分 -> 用戶一自己金額 = rawAmount / 2，用戶二新增一筆金額 = rawAmount / 2，標註「用戶一代付平分」，且用戶二欠款增加 rawAmount / 2。
+                    // 4. 用戶二選擇平分 -> 用戶二自己金額 = rawAmount / 2，用戶一新增一筆金額 = rawAmount / 2，標註「用戶二代付平分」，且用戶二欠款減少 rawAmount / 2。
+                }
+            }
+
+            // 讓我們全面改寫跨帳戶連動新增邏輯以完美符合 1~4 點需求：
+            let otherUserId = null;
+            if (state.users.length >= 2) {
+                otherUserId = (currentUser.id === state.users[0].id) ? state.users[1].id : state.users[0].id;
+            }
 
             if (editId) {
+                // 編輯模式暫不支援跨帳戶連動異動或簡化為直接修改本筆
                 const targetIndex = state.expenses.findIndex(e => e.id == editId);
                 if (targetIndex > -1) {
                     const oldExp = { ...state.expenses[targetIndex] };
-                    
-                    applySplitDebtLogic(oldExp.splitType || 'self', oldExp.rawAmount || oldExp.amount, true);
+                    state.coupleDebt = (state.coupleDebt || 0) - (oldExp.debtDelta || 0);
+
+                    if (splitType === 'full_pay_for_other') {
+                        actualAmount = 0;
+                        if (isUser1()) { coupleDebtDelta = rawAmount; targetNote = `${note} (用戶一全額代付)`; }
+                        else if (isUser2()) { coupleDebtDelta = -rawAmount; targetNote = `${note} (用戶二全額代付)`; }
+                    } else if (splitType === 'split') {
+                        actualAmount = rawAmount / 2;
+                        if (isUser1()) { coupleDebtDelta = rawAmount / 2; targetNote = `${note} (用戶一代付平分)`; }
+                        else if (isUser2()) { coupleDebtDelta = -(rawAmount / 2); targetNote = `${note} (用戶二代付平分)`; }
+                    } else {
+                        actualAmount = rawAmount;
+                        coupleDebtDelta = 0;
+                        targetNote = note;
+                    }
+
+                    state.coupleDebt = (state.coupleDebt || 0) + coupleDebtDelta;
 
                     const newExp = {
                         ...oldExp,
@@ -1339,33 +1223,91 @@
                         amount: actualAmount,
                         rawAmount,
                         splitType,
-                        note,
+                        note: targetNote,
                         section,
-                        category
+                        category,
+                        debtDelta: coupleDebtDelta
                     };
                     state.expenses[targetIndex] = newExp;
-                    
-                    applySplitDebtLogic(splitType, rawAmount, false);
                     addAuditLog('修改', oldExp, newExp);
                 }
             } else {
+                let mainExpAmount = rawAmount;
+                let otherExpAmount = 0;
+                let otherNote = note;
+
+                if (splitType === 'full_pay_for_other') {
+                    mainExpAmount = 0; // 當事人自己金額為 0
+                    if (isUser1()) {
+                        coupleDebtDelta = rawAmount; // 用戶二欠用戶一增加
+                        targetNote = `${note} (用戶一全額代付)`;
+                        otherExpAmount = rawAmount;
+                        otherNote = `${note} (用戶一協助全額代付)`;
+                    } else if (isUser2()) {
+                        coupleDebtDelta = -rawAmount; // 用戶二欠用戶一減少
+                        targetNote = `${note} (用戶二全額代付)`;
+                        otherExpAmount = rawAmount;
+                        otherNote = `${note} (用戶二協助全額代付)`;
+                    }
+                } else if (splitType === 'split') {
+                    mainExpAmount = rawAmount / 2;
+                    if (isUser1()) {
+                        coupleDebtDelta = rawAmount / 2;
+                        targetNote = `${note} (平分AA)`;
+                        otherExpAmount = rawAmount / 2;
+                        otherNote = `${note} (用戶一代付平分)`;
+                    } else if (isUser2()) {
+                        coupleDebtDelta = -(rawAmount / 2);
+                        targetNote = `${note} (平分AA)`;
+                        otherExpAmount = rawAmount / 2;
+                        otherNote = `${note} (用戶二代付平分)`;
+                    }
+                } else {
+                    mainExpAmount = rawAmount;
+                    coupleDebtDelta = 0;
+                    targetNote = note;
+                }
+
+                // 1. 新增當事人的記帳紀錄
+                const baseId = Date.now();
                 state.expenses.unshift({
-                    id: Date.now(),
+                    id: baseId,
                     userId: currentUser.id,
                     date,
-                    amount: actualAmount,
+                    amount: mainExpAmount,
                     rawAmount,
                     splitType,
-                    note,
+                    note: targetNote,
                     section,
-                    category
+                    category,
+                    debtDelta: coupleDebtDelta,
+                    isPaired: otherUserId ? true : false
                 });
 
-                applySplitDebtLogic(splitType, rawAmount, false);
+                // 2. 如果有第二個用戶，自動在對方帳本新增對應的紀錄
+                if (otherUserId && (splitType === 'full_pay_for_other' || splitType === 'split')) {
+                    state.expenses.unshift({
+                        id: baseId + 1,
+                        userId: otherUserId,
+                        date,
+                        amount: otherExpAmount,
+                        rawAmount,
+                        splitType,
+                        note: otherNote,
+                        section,
+                        category,
+                        debtDelta: 0,
+                        isPaired: true
+                    });
+                }
+
+                // 更新情侶債務現況
+                state.coupleDebt = (state.coupleDebt || 0) + coupleDebtDelta;
             }
 
             saveState();
             resetExpenseForm();
+            renderDebtDashboard();
             renderExpenseHistory();
             renderExpenseRankings();
             populateMonthDropdown();
@@ -1377,7 +1319,7 @@
             document.getElementById('expSplitType').value = 'self';
             document.getElementById('expNote').value = '';
             document.getElementById('expDate').value = new Date().toISOString().split('T')[0];
-            const cfg = THEME_CONFIG[state.theme || 'corgi'] || THEME_CONFIG.corgi;
+            const cfg = THEME_CONFIG.corgi;
             document.getElementById('expenseFormTitle').innerText = `${cfg.subIcon || '🦴'} 記錄消費`;
             document.getElementById('saveExpenseBtn').innerText = '新增記帳 ✨';
             document.getElementById('cancelEditBtn').style.display = 'none';
@@ -1391,7 +1333,7 @@
             document.getElementById('expDate').value = target.date;
             document.getElementById('expAmount').value = target.rawAmount || target.amount;
             document.getElementById('expSplitType').value = target.splitType || 'self';
-            document.getElementById('expNote').value = target.note;
+            document.getElementById('expNote').value = target.note.replace(/ \((平分AA\vert{}用戶一全額代付\vert{}用戶二全額代付\vert{}用戶一協助全額代付\vert{}用戶二協助全額代付\vert{}用戶一代付平分\vert{}用戶二代付平分)\)/g, '');
             
             updateCategoryDropdown();
             document.getElementById('expCategory').value = `${target.section}:${target.category}`;
@@ -1408,12 +1350,13 @@
             const targetIndex = state.expenses.findIndex(e => e.id === id);
             if (targetIndex > -1) {
                 const oldExp = state.expenses[targetIndex];
-                
-                applySplitDebtLogic(oldExp.splitType || 'self', oldExp.rawAmount || oldExp.amount, true);
-                
+                if (oldExp.debtDelta) {
+                    state.coupleDebt = (state.coupleDebt || 0) - oldExp.debtDelta;
+                }
                 addAuditLog('刪除', oldExp, null);
                 state.expenses.splice(targetIndex, 1);
                 saveState();
+                renderDebtDashboard();
                 renderExpenseHistory();
                 renderExpenseRankings();
                 populateMonthDropdown();
@@ -1521,10 +1464,6 @@
             let bankTotal = (income.banks || []).reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
             let totalIncome = (Number(income.salary) || 0) + (Number(income.amway) || 0) + (Number(income.lottery) || 0) + bankTotal;
 
-            if (isUser2()) {
-                totalIncome = Math.max(0, totalIncome - (income.repayToUser1 || 0));
-            }
-
             const sectionNames = { needs: '生活必須', invest: '投資理財', emergency: '緊急儲備' };
             let spentBySec = { needs: 0, invest: 0, emergency: 0 };
 
@@ -1608,10 +1547,6 @@
             const incomeObj = state.budgets[currentUser.id]?.income || { salary: 0, amway: 0, banks: [], lottery: 0, repayToUser1: 0 };
             let bankTotal = (incomeObj.banks || []).reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
             let totalIncome = (Number(incomeObj.salary) || 0) + (Number(incomeObj.amway) || 0) + (Number(incomeObj.lottery) || 0) + bankTotal;
-
-            if (isUser2()) {
-                totalIncome = Math.max(0, totalIncome - (incomeObj.repayToUser1 || 0));
-            }
 
             const monthExp = state.expenses.filter(e => e.userId === currentUser.id && e.date.startsWith(monthStr));
             
@@ -1824,7 +1759,6 @@
             }
         }
 
-        /* --- 跨裝置全站資料導出與導入還原邏輯 --- */
         function exportFullStateBackup() {
             const dateStr = new Date().toISOString().split('T')[0];
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
