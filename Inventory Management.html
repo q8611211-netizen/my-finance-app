@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>物品庫存管理工具</title>
+    <!-- iOS PWA 支援標籤 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="庫存管理">
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/180/007AFF/FFFFFF?text=Inv">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    colors: {
+                        ios: {
+                            blue: '#007AFF',
+                            green: '#34C759',
+                            red: '#FF3B30',
+                            orange: '#FF9500',
+                            gray: '#8E8E93',
+                            lightGray: '#F2F2F7',
+                            darkGray: '#1C1C1E'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome 圖示 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #F2F2F7;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #000000;
+                color: #FFFFFF;
+            }
+        }
+    </style>
+</head>
+<body class="pb-24">
+
+    <!-- 頂部導航列 -->
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 px-4 py-3">
+        <div class="flex justify-between items-center max-w-2xl mx-auto">
+            <h1 class="text-lg font-semibold text-zinc-900 dark:text-white">物品庫存管理</h1>
+            <div class="flex gap-2">
+                <button onclick="exportJsonFile()" class="text-ios-blue text-sm font-medium px-3 py-1.5 bg-blue-50 dark:bg-blue-950/50 rounded-full">
+                    <i class="fa-solid fa-file-arrow-down mr-1"></i>備份
+                </button>
+                <button onclick="triggerImportFile()" class="text-ios-green text-sm font-medium px-3 py-1.5 bg-green-50 dark:bg-green-950/50 rounded-full">
+                    <i class="fa-solid fa-file-arrow-up mr-1"></i>還原
+                </button>
+                <input type="file" id="importFile" accept=".json" class="hidden" onchange="importJsonFile(event)">
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <main class="max-w-2xl mx-auto p-4 space-y-4">
+
+        <!-- 搜尋與篩選 -->
+        <div class="flex gap-2">
+            <div class="relative flex-1">
+                <i class="fa-solid fa-search absolute left-3 top-3 text-zinc-400"></i>
+                <input type="text" id="searchInput" oninput="renderItems()" placeholder="搜尋產品名稱或品牌..." 
+                    class="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+            </div>
+            <select id="filterCategory" onchange="renderItems()" class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                <option value="">所有類別</option>
+            </select>
+        </div>
+
+        <!-- 物品列表 -->
+        <div id="itemList" class="space-y-3">
+            <!-- 動態生成 -->
+        </div>
+
+        <!-- 空狀態 -->
+        <div id="emptyState" class="hidden text-center py-12 text-zinc-400">
+            <i class="fa-solid fa-box-open text-4xl mb-2"></i>
+            <p class="text-sm">尚無庫存資料，點擊下方按鈕新增</p>
+        </div>
+    </main>
+
+    <!-- 底部新增按鈕 -->
+    <div class="fixed bottom-6 left-0 right-0 z-30 flex justify-center pointer-events-none">
+        <button onclick="openModal()" class="pointer-events-auto bg-ios-blue text-white font-semibold px-6 py-3 rounded-full shadow-lg shadow-blue-500/30 flex items-center gap-2 active:scale-95 transition-transform">
+            <i class="fa-solid fa-plus"></i> 新增物品
+        </button>
+    </div>
+
+    <!-- 新增/編輯 Modal -->
+    <div id="itemModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white dark:bg-zinc-900 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-zinc-100 dark:border-zinc-800">
+                <h3 id="modalTitle" class="text-lg font-bold text-zinc-900 dark:text-white">新增物品資料</h3>
+                <button onclick="closeModal()" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <form id="itemForm" onsubmit="saveItem(event)" class="space-y-4">
+                <input type="hidden" id="itemId">
+                
+                <!-- 1. 購買日期 -->
+                <div>
+                    <label class="block text-xs font-medium text-zinc-500 mb-1">
+                        <i class="fa-solid fa-calendar-days text-ios-blue mr-1"></i>1. 購買日期
+                    </label>
+                    <input type="date" id="buyDate" class="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                </div>
+
+                <!-- 2 & 2-1. 購買品牌與購買金額 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1">
+                            <i class="fa-solid fa-tag text-ios-blue mr-1"></i>2. 購買品牌
+                        </label>
+                        <select id="brand" class="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                            <option value="安麗">安麗</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1">
+                            <i class="fa-solid fa-dollar-sign text-ios-blue mr-1"></i>2-1. 購買金額 (NT$)
+                        </label>
+                        <input type="number" id="price" min="0" step="1" class="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                    </div>
+                </div>
+
+                <!-- 3 & 4. 產品類別與產品名稱 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1">
+                            <i class="fa-solid fa-layer-group text-ios-blue mr-1"></i>3. 產品類別 *
+                        </label>
+                        <select id="category" required class="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                            <option value="盥洗用品">盥洗用品</option>
+                            <option value="家用清潔">家用清潔</option>
+                            <option value="營養品">營養品</option>
+                            <option value="保養品">保養品</option>
+                            <option value="化妝品">化妝品</option>
+                            <option value="零食">零食</option>
+                            <option value="耗材">耗材</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1">
+                            <i class="fa-solid fa-box text-ios-blue mr-1"></i>4. 產品名稱 *
+                        </label>
+                        <input type="text" id="name" required class="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                    </div>
+                </div>
+
+                <!-- 5 & 6. 產品數量與產品有效期限 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1">
+                            <i class="fa-solid fa-cubes text-ios-blue mr-1"></i>5. 產品數量
+                        </label>
+                        <input type="number" id="quantity" min="1" value="1" class="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1">
+                            <i class="fa-solid fa-hourglass-end text-ios-blue mr-1"></i>6. 產品有效期限
+                        </label>
+                        <input type="date" id="expiryDate" class="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                    </div>
+                </div>
+
+                <!-- 7 & 8. 開始使用日期與產品用完的日期 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1">
+                            <i class="fa-solid fa-play text-ios-blue mr-1"></i>7. 開始使用日期
+                        </label>
+                        <input type="date" id="startDate" class="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-zinc-500 mb-1">
+                            <i class="fa-solid fa-flag-checkered text-ios-blue mr-1"></i>8. 產品用完的日期
+                        </label>
+                        <input type="date" id="endDate" class="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                    </div>
+                </div>
+
+                <!-- 9. 產品保固 -->
+                <div>
+                    <label class="block text-xs font-medium text-zinc-500 mb-1">
+                        <i class="fa-solid fa-shield-halved text-ios-blue mr-1"></i>9. 產品保固
+                    </label>
+                    <input type="date" id="warrantyDate" class="w-full p-2.5 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ios-blue">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-ios-blue text-white font-semibold py-3 rounded-xl shadow-md active:scale-95 transition-transform">儲存資料</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        let items = JSON.parse(localStorage.getItem('inventory_items') || '[cite: 1]');
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCategoryFilter();
+            renderItems();
+        });
+
+        function saveToStorage() {
+            localStorage.setItem('inventory_items', JSON.stringify(items));
+            renderCategoryFilter();
+            renderItems();
+        }
+
+        function openModal(id = null) {
+            document.getElementById('itemModal').classList.remove('hidden');
+            if (id) {
+                document.getElementById('modalTitle').innerText = '編輯物品資料';
+                const item = items.find(i => i.id === id);
+                if (item) {
+                    document.getElementById('itemId').value = item.id;
+                    document.getElementById('buyDate').value = item.buyDate || '';
+                    document.getElementById('brand').value = item.brand || '安麗';
+                    document.getElementById('price').value = item.price || '';
+                    document.getElementById('category').value = item.category || '盥洗用品';
+                    document.getElementById('name').value = item.name || '';
+                    document.getElementById('quantity').value = item.quantity || 1;
+                    document.getElementById('expiryDate').value = item.expiryDate || '';
+                    document.getElementById('startDate').value = item.startDate || '';
+                    document.getElementById('endDate').value = item.endDate || '';
+                    document.getElementById('warrantyDate').value = item.warrantyDate || '';
+                }
+            } else {
+                document.getElementById('modalTitle').innerText = '新增物品資料';
+                document.getElementById('itemForm').reset();
+                document.getElementById('itemId').value = '';
+                document.getElementById('brand').value = '安麗'; // 預設安麗
+                document.getElementById('category').value = '盥洗用品'; // 預設第一個選項
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('itemModal').classList.add('hidden');
+        }
+
+        function saveItem(e) {
+            e.preventDefault();
+            const id = document.getElementById('itemId').value;
+            const data = {
+                id: id ? Number(id) : Date.now(),
+                buyDate: document.getElementById('buyDate').value,
+                brand: document.getElementById('brand').value,
+                price: Number(document.getElementById('price').value) || 0,
+                category: document.getElementById('category').value,
+                name: document.getElementById('name').value,
+                quantity: Number(document.getElementById('quantity').value) || 1,
+                expiryDate: document.getElementById('expiryDate').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
+                warrantyDate: document.getElementById('warrantyDate').value,
+            };
+
+            if (id) {
+                const index = items.findIndex(i => i.id === Number(id));
+                if (index !== -1) items[index] = data;
+            } else {
+                items.unshift(data);
+            }
+
+            saveToStorage();
+            closeModal();
+        }
+
+        function deleteItem(id) {
+            if (confirm('確定要刪除這筆物品資料嗎？')) {
+                items = items.filter(i => i.id !== id);
+                saveToStorage();
+            }
+        }
+
+        function renderCategoryFilter() {
+            const select = document.getElementById('filterCategory');
+            const currentVal = select.value;
+            const categories = [...new Set(items.map(i => i.category))].filter(Boolean);
+            
+            select.innerHTML = '<option value="">所有類別</option>' + 
+                categories.map(c => `<option value="${c}" ${c === currentVal ? 'selected' : ''}>${c}</option>`).join('');
+        }
+
+        function renderItems() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const selectedCategory = document.getElementById('filterCategory').value;
+            const listEl = document.getElementById('itemList');
+            const emptyEl = document.getElementById('emptyState');
+
+            const filtered = items.filter(i => {
+                const matchKeyword = (i.name && i.name.toLowerCase().includes(keyword)) || 
+                                     (i.brand && i.brand.toLowerCase().includes(keyword));
+                const matchCategory = !selectedCategory || i.category === selectedCategory;
+                return matchKeyword && matchCategory;
+            });
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '';
+                emptyEl.classList.remove('hidden');
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+
+            listEl.innerHTML = filtered.map(item => {
+                // 計算花費天數與每月預算
+                let daysSpan = '-';
+                let monthlyBudget = '-';
+                if (item.startDate && item.endDate) {
+                    const start = new Date(item.startDate);
+                    const end = new Date(item.endDate);
+                    const diffTime = end - start;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    if (diffDays >= 0) {
+                        daysSpan = `${diffDays} 天`;
+                        if (item.price > 0 && diffDays > 0) {
+                            const months = diffDays / 30.44; // 平均每月天數
+                            const budget = item.price / months;
+                            monthlyBudget = `NT$ ${Math.round(budget)} / 月`;
+                        } else if (item.price > 0 && diffDays === 0) {
+                            monthlyBudget = `NT$ ${item.price} (當天用完)`;
+                        }
+                    }
+                }
+
+                return `
+                    <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-xs px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-ios-blue rounded-md font-medium"><i class="fa-solid fa-layer-group mr-1"></i>${item.category || '未分類'}</span>
+                                <h4 class="text-base font-semibold text-zinc-900 dark:text-white mt-1"><i class="fa-solid fa-box text-xs text-zinc-400 mr-1"></i>${item.name}</h4>
+                                ${item.brand ? `<p class="text-xs text-zinc-400"><i class="fa-solid fa-tag text-xs mr-1"></i>品牌：${item.brand}</p>` : ''}
+                            </div>
+                            <div class="text-right">
+                                <span class="text-sm font-bold text-zinc-900 dark:text-white">NT$ ${item.price}</span>
+                                <p class="text-xs text-zinc-400"><i class="fa-solid fa-cubes text-xs mr-1"></i>數量：${item.quantity}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-zinc-50 dark:bg-zinc-800/50 p-2.5 rounded-xl text-zinc-600 dark:text-zinc-300">
+                            <div><span class="text-zinc-400">1. 購買日期：</span>${item.buyDate || '未填'}</div>
+                            <div><span class="text-zinc-400">6. 有效期限：</span>${item.expiryDate || '未填'}</div>
+                            <div><span class="text-zinc-400">7-8. 使用區間：</span>${item.startDate || '?'} ~ ${item.endDate || '?'}</div>
+                            <div><span class="text-zinc-400">使用天數：</span><span class="font-semibold text-ios-blue">${daysSpan}</span></div>
+                            <div><span class="text-zinc-400">9. 產品保固：</span>${item.warrantyDate || '未填'}</div>
+                            <div class="col-span-2 pt-1 border-t border-zinc-200 dark:border-zinc-700/50 flex justify-between">
+                                <span class="text-zinc-400">換算每月預算消耗：</span>
+                                <span class="font-bold text-ios-green">${monthlyBudget}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-3 pt-1">
+                            <button onclick="openModal(${item.id})" class="text-xs text-ios-blue font-medium px-3 py-1 bg-blue-50 dark:bg-blue-950/40 rounded-lg">編輯</button>
+                            <button onclick="deleteItem(${item.id})" class="text-xs text-ios-red font-medium px-3 py-1 bg-red-50 dark:bg-red-950/40 rounded-lg">刪除</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 檔案匯出 (下載 JSON)
+        function exportJsonFile() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(items, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            const dateStr = new Date().toISOString().slice(0, 10);
+            downloadAnchor.setAttribute("download", `inventory_backup_${dateStr}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // 觸發檔案匯入選擇
+        function triggerImportFile() {
+            document.getElementById('importFile').click();
+        }
+
+        // 檔案匯入 (讀取 JSON)
+        function importJsonFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (Array.isArray(parsed)) {
+                        if (confirm('確定要還原並覆蓋目前的庫存資料嗎？')) {
+                            items = parsed;
+                            saveToStorage();
+                            alert('資料還原成功！');
+                        }
+                    } else {
+                        alert('JSON 格式錯誤：根結點必須是陣列。');
+                    }
+                } catch (err) {
+                    alert('JSON 解析失敗，請檢查檔案格式是否正確。');
+                }
+                // 清空 input 讓重複選取同檔案也能觸發 change
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
