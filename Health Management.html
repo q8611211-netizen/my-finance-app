@@ -1,0 +1,1614 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>個人健康評估助手 Pro</title>
+  
+  <!-- iOS PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="健康評估">
+  <link rel="apple-touch-icon" href="https://img.icons8.com/isometric/180/health.png">
+
+  <!-- Chart.js 與 SheetJS (xlsx 檔案解析) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #F2F2F7;
+      --card-bg: #FFFFFF;
+      --text-color: #1C1C1E;
+      --sub-text: #8E8E93;
+      --primary: #007AFF;
+      --danger: #FF3B30;
+      --warning: #FF9500;
+      --success: #34C759;
+      --border-color: #E5E5EA;
+      --radius: 16px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-color: #000000;
+        --card-bg: #1C1C1E;
+        --text-color: #FFFFFF;
+        --sub-text: #8E8E93;
+        --border-color: #38383A;
+      }
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+      padding-left: env(safe-area-inset-left);
+      padding-right: env(safe-area-inset-right);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 20px;
+      background: var(--card-bg);
+      border-bottom: 0.5px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .btn-text {
+      color: var(--primary);
+      background: none;
+      border: none;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    .container {
+      padding: 16px;
+      flex: 1;
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: var(--sub-text);
+      margin-bottom: 6px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-color);
+      color: var(--text-color);
+      font-size: 15px;
+      outline: none;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-secondary {
+      background: rgba(142, 142, 147, 0.15);
+      color: var(--primary);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .user-list {
+      list-style: none;
+    }
+
+    .user-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      border-bottom: 0.5px solid var(--border-color);
+      cursor: pointer;
+    }
+
+    .user-item:last-child {
+      border-bottom: none;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .metric-card {
+      background: var(--bg-color);
+      padding: 12px 10px;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .metric-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--sub-text);
+    }
+
+    .metric-icon {
+      font-size: 16px;
+    }
+
+    .metric-value {
+      font-size: 17px;
+      font-weight: 700;
+      margin-top: 6px;
+      color: var(--text-color);
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    .status-normal { color: var(--success); }
+    .status-low { color: var(--warning); }
+    .status-high { color: var(--danger); }
+
+    .tag {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      margin: 2px;
+      background: rgba(0, 122, 255, 0.1);
+      color: var(--primary);
+    }
+
+    .tag-alert {
+      background: rgba(255, 59, 48, 0.1);
+      color: var(--danger);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .chart-container {
+      position: relative;
+      height: 260px;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .history-list {
+      list-style: none;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 0.5px solid var(--border-color);
+      cursor: pointer;
+    }
+
+    .history-item:hover {
+      background: rgba(0, 122, 255, 0.05);
+    }
+
+    .meal-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      border-bottom: 0.5px solid var(--border-color);
+      font-size: 14px;
+    }
+
+    .tab-nav {
+      display: flex;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--sub-text);
+      cursor: pointer;
+      border-radius: 10px;
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 14px 0 8px 0;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 4px;
+    }
+
+    /* Modal 彈出視窗樣式 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-content {
+      background: var(--card-bg);
+      color: var(--text-color);
+      width: 100%;
+      max-width: 500px;
+      max-height: 85vh;
+      border-radius: var(--radius);
+      padding: 20px;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <h1 id="header-title">個人健康評估助手</h1>
+    <button id="header-btn" class="btn-text hidden" onclick="logout()">切換用戶</button>
+  </header>
+
+  <div class="container">
+
+    <!-- 1. 登入/用戶選擇視圖 -->
+    <div id="view-login">
+      <div class="card">
+        <div class="card-title">👤 選擇用戶登入</div>
+        <p style="font-size: 12px; color: var(--sub-text); margin-bottom: 12px;">管理者最多可新增 5 位用戶</p>
+        <ul id="user-list" class="user-list"></ul>
+      </div>
+
+      <div class="card" id="add-user-card">
+        <div class="card-title">➕ 新增用戶 (管理者權限)</div>
+        <div class="form-group">
+          <label>用戶姓名 / 暱稱</label>
+          <input type="text" id="new-username" class="form-control" placeholder="請輸入姓名">
+        </div>
+        <button class="btn" onclick="addUser()">新增用戶</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔄 跨裝置資料同步</div>
+        <p style="font-size: 12px; color: var(--sub-text); margin-bottom: 12px;">可匯出 JSON 備份檔並在新裝置匯入</p>
+        <div class="grid-2">
+          <button class="btn btn-secondary" onclick="exportJSON()">📥 匯出 JSON</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('import-file').click()">📤 匯入 JSON</button>
+        </div>
+        <input type="file" id="import-file" class="hidden" accept=".json" onchange="importJSON(event)">
+      </div>
+    </div>
+
+    <!-- 2. 初次登入資料設定 -->
+    <div id="view-profile-setup" class="hidden">
+      <div class="card">
+        <div class="card-title">📋 完善個人基本資料</div>
+        <p style="font-size: 12px; color: var(--sub-text); margin-bottom: 14px;">此資料將用於精準計算基礎代謝與標準體重</p>
+        
+        <div class="form-group">
+          <label>性別</label>
+          <select id="init-gender" class="form-control">
+            <option value="male">男</option>
+            <option value="female">女</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>身高 (cm)</label>
+          <input type="number" id="init-height" class="form-control" placeholder="例如：170">
+        </div>
+        <div class="form-group">
+          <label>血型</label>
+          <select id="init-blood" class="form-control">
+            <option value="A">A 型</option>
+            <option value="B">B 型</option>
+            <option value="O">O 型</option>
+            <option value="AB">AB 型</option>
+          </select>
+        </div>
+        <button class="btn" onclick="saveInitialProfile()">儲存並開始使用</button>
+      </div>
+    </div>
+
+    <!-- 3. 主要功能頁面 -->
+    <div id="view-main" class="hidden">
+
+      <!-- 功能分頁切換 (Tab) -->
+      <div class="tab-nav">
+        <button class="tab-btn active" id="tab-btn-record" onclick="switchTab('record')">📝 體脂紀錄</button>
+        <button class="tab-btn" id="tab-btn-nutrition" onclick="switchTab('nutrition')">🥗 營養飲食紀錄</button>
+        <button class="tab-btn" id="tab-btn-history" onclick="switchTab('history')">📅 歷史列表</button>
+      </div>
+
+      <!-- 分頁一：當日紀錄與分析 (體脂數據) -->
+      <div id="tab-content-record">
+        <div class="card">
+          <div class="card-title">📅 健康紀錄日期與 Excel 匯入</div>
+          
+          <div class="grid-2">
+            <div class="form-group">
+              <label>評估日期</label>
+              <input type="date" id="record-date" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>紀錄時間</label>
+              <input type="time" id="record-time" class="form-control">
+            </div>
+          </div>
+
+          <!-- 精準對應體脂機 Excel 匯入 -->
+          <div class="form-group" style="background: rgba(0, 122, 255, 0.03); border: 2px dashed var(--primary); padding: 14px; border-radius: 12px; text-align: center;">
+            <div style="font-size: 22px;">📊</div>
+            <div style="font-size: 14px; font-weight: 600; color: var(--primary); margin-top: 4px;">匯入體脂機 Excel 檔案 (.xls / .xlsx)</div>
+            <div style="font-size: 11px; color: var(--sub-text); margin-top: 2px;">完美對應「稱重時間、體重、體脂率、肌肉量、內臟脂肪、BMR...」</div>
+            <button class="btn btn-secondary" style="margin-top: 8px;" onclick="document.getElementById('excel-file').click()">選擇 Excel 檔案</button>
+            <input type="file" id="excel-file" class="hidden" accept=".xlsx, .xls" onchange="handleExcelImport(event)">
+          </div>
+
+          <div style="text-align: center; font-size: 12px; color: var(--sub-text); margin: 8px 0;">— 或手動錄入當日數據 —</div>
+
+          <!-- 身體組成數據輸入 (24項對應) -->
+          <div class="grid-2">
+            <div class="form-group"><label>⚖️ 1. 體重 (kg)</label><input type="number" id="inp-weight" class="form-control" step="0.01" placeholder="64.75"></div>
+            <div class="form-group"><label>⚡ 2. 基礎代謝率 (kcal)</label><input type="number" id="inp-bmr" class="form-control" placeholder="1468"></div>
+            <div class="form-group"><label>📊 3. BMI</label><input type="number" id="inp-bmi" class="form-control" step="0.1" placeholder="22.3"></div>
+            <div class="form-group"><label>📉 4. 體脂肪率 (%)</label><input type="number" id="inp-fat-rate" class="form-control" step="0.1" placeholder="16.8"></div>
+            <div class="form-group"><label>🩸 5. 體脂肪重量 (kg)</label><input type="number" id="inp-fat-weight" class="form-control" step="0.1" placeholder="10.9"></div>
+            <div class="form-group"><label>🥐 6. 肌肉率 (%)</label><input type="number" id="inp-muscle-rate" class="form-control" step="0.1" placeholder="79.1"></div>
+            <div class="form-group"><label>💪 7. 肌肉量 (kg)</label><input type="number" id="inp-muscle-weight" class="form-control" step="0.1" placeholder="51.2"></div>
+            <div class="form-group"><label>💦 8. 蛋白質率 (%)</label><input type="number" id="inp-protein-rate" class="form-control" step="0.1" placeholder="17.4"></div>
+            <div class="form-group"><label>💧 9. 體水分率 (%)</label><input type="number" id="inp-water-rate" class="form-control" step="0.1" placeholder="57.0"></div>
+            <div class="form-group"><label>🥐 10. 皮下脂肪率 (%)</label><input type="number" id="inp-subfat-rate" class="form-control" step="0.1" placeholder="11.2"></div>
+            <div class="form-group"><label>🦴 11. 骨骼肌率 (%)</label><input type="number" id="inp-skel-rate" class="form-control" step="0.1" placeholder="42.9"></div>
+            <div class="form-group"><label>🥩 12. 骨骼肌重 (kg)</label><input type="number" id="inp-skel-weight" class="form-control" step="0.1" placeholder="27.8"></div>
+            <div class="form-group"><label>🫀 19. 內臟脂肪</label><input type="number" id="inp-visceral" class="form-control" placeholder="7"></div>
+            <div class="form-group"><label>🦴 20. 骨量 (kg)</label><input type="number" id="inp-bone-mass" class="form-control" step="0.1" placeholder="2.7"></div>
+            <div class="form-group"><label>🎂 22. 身體年齡</label><input type="number" id="inp-body-age" class="form-control" placeholder="23"></div>
+            <div class="form-group"><label>💯 24. 健康評分</label><input type="number" id="inp-score" class="form-control" placeholder="96"></div>
+          </div>
+
+          <div class="card-title" style="margin-top: 14px;">🧘‍♂️ 生活健康要素自我評估</div>
+          <div class="form-group">
+            <label>😊 愉快心情平均值 (1-10分)</label>
+            <input type="number" id="inp-mood" class="form-control" min="1" max="10" placeholder="8">
+          </div>
+          <div class="form-group">
+            <label>🏃‍♂️ 運動習慣</label>
+            <select id="inp-exercise" class="form-control">
+              <option value="none">幾乎不運動</option>
+              <option value="light">每週 1-2 次輕度運動</option>
+              <option value="moderate">每週 3-4 次中度運動</option>
+              <option value="heavy">每週 5 次以上高強度運動</option>
+            </select>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>🛏️ 睡眠入睡時間</label>
+              <input type="time" id="inp-sleep-start" class="form-control" value="23:00">
+            </div>
+            <div class="form-group">
+              <label>⏰ 睡眠起床時間</label>
+              <input type="time" id="inp-sleep-end" class="form-control" value="07:00">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>😴 睡眠品質感受</label>
+            <select id="inp-sleep-quality" class="form-control">
+              <option value="bad">經常失眠/多夢/品質差</option>
+              <option value="normal">普通/尚可</option>
+              <option value="good">良好/深層睡眠充足</option>
+            </select>
+          </div>
+
+          <button class="btn" onclick="calculateAndSave()">💾 計算並儲存健康紀錄</button>
+        </div>
+
+        <!-- 長時間健康狀況圖表區塊 -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div class="card-title" style="margin-bottom:0;">📈 健康趨勢分析</div>
+            <select id="chart-range" class="form-control" style="width: 120px; padding: 6px 10px; font-size: 13px;" onchange="renderChart()">
+              <option value="1">單日詳情</option>
+              <option value="7" selected>7 日趨勢</option>
+              <option value="30">30 日趨勢</option>
+              <option value="60">60 日趨勢</option>
+              <option value="90">90 日趨勢</option>
+            </select>
+          </div>
+          <div class="chart-container">
+            <canvas id="healthChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 24 項健康數據指標總覽 -->
+        <div class="card">
+          <div class="card-title">📊 24 項健康數據評估總覽</div>
+          <div class="grid-2" id="metrics-grid"></div>
+        </div>
+
+        <!-- 需特別注意改善項目 -->
+        <div class="card" style="border-left: 4px solid var(--danger);">
+          <div class="card-title" style="color: var(--danger);">⚠️ 需注意/不達標指標</div>
+          <div id="alerts-list" style="margin-top: 8px;"></div>
+        </div>
+
+        <!-- 缺乏營養素與生活改善建議 -->
+        <div class="card" style="border-left: 4px solid var(--primary);">
+          <div class="card-title">💡 綜合改善與營養補充建議</div>
+          <div style="margin-top: 8px;">
+            <h4 style="font-size: 13px; color: var(--sub-text);">🧪 推測可能缺乏之營養素：</h4>
+            <div id="nutrition-recommendations" style="margin: 8px 0;"></div>
+            
+            <h4 style="font-size: 13px; color: var(--sub-text); margin-top: 12px;">🥗 生活習慣改善建議：</h4>
+            <ul id="lifestyle-recommendations" style="margin-left: 18px; font-size: 14px; margin-top: 6px; line-height: 1.6;"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分頁二：營養飲食紀錄與完整營養素統計 -->
+      <div id="tab-content-nutrition" class="hidden">
+        <!-- 置頂的「今日營養、水分與熱量總結評估」儀表板 -->
+        <div class="card" style="border-left: 4px solid var(--success);">
+          <div class="card-title">📈 今日營養、水分與熱量總結評估</div>
+          <div id="nutri-summary-box" style="margin-top: 8px;">
+            <!-- 動態填入加總評估內容 -->
+          </div>
+          <button class="btn btn-danger" style="margin-top: 12px; font-size: 14px; padding: 10px;" onclick="resetTodayNutrition()">🔄 結算並封存今日數據 (開啟新的一天記錄)</button>
+        </div>
+
+        <!-- 當日各餐進食歷史清單 -->
+        <div class="card">
+          <div class="card-title">🕒 當日各餐進食歷史紀錄</div>
+          <div id="meals-history-list" style="margin-top: 8px;">
+            <!-- 動態填入各餐列表 -->
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🍽️ 新增餐點與完整營養素紀錄</div>
+          <p style="font-size: 12px; color: var(--sub-text); margin-bottom: 12px;">每次新增餐點將自動累加至今日總量中</p>
+
+          <div class="grid-2">
+            <div class="form-group">
+              <label>紀錄日期</label>
+              <input type="date" id="nutri-date" class="form-control">
+            </div>
+            <div class="form-group">
+              <label>紀錄時間</label>
+              <input type="time" id="nutri-time" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>🍽️ 餐別 / 食物說明</label>
+            <input type="text" id="nutri-meal-desc" class="form-control" placeholder="例如：早餐 紐崔萊幸福餐 + 營養補充品">
+          </div>
+
+          <div class="form-group">
+            <label>💧 飲水量 (c.c.)</label>
+            <input type="number" id="nutri-water" class="form-control" placeholder="例如：500">
+          </div>
+
+          <!-- 一、 熱量與三大營養素及子項目 -->
+          <div class="section-title">一、 熱量與三大營養素</div>
+          <div class="grid-2">
+            <div class="form-group"><label>🔥 熱量 (kcal)</label><input type="number" id="nutri-calories" class="form-control" placeholder="600"></div>
+            <div class="form-group"><label>🛡️ 蛋白質 (g)</label><input type="number" id="nutri-protein" class="form-control" placeholder="50"></div>
+            <div class="form-group"><label>🥑 脂肪 (g)</label><input type="number" id="nutri-fat" class="form-control" placeholder="20"></div>
+            <div class="form-group"><label>🍞 碳水化合物 (g)</label><input type="number" id="nutri-carb" class="form-control" placeholder="80"></div>
+            <div class="form-group"><label>🧈 飽和脂肪 (g)</label><input type="number" id="nutri-sat-fat" class="form-control" placeholder="5"></div>
+            <div class="form-group"><label>🍟 反式脂肪 (g)</label><input type="number" id="nutri-trans-fat" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>🍬 糖 (g)</label><input type="number" id="nutri-sugar" class="form-control" placeholder="10"></div>
+            <div class="form-group"><label>🌾 膳食纖維 (g)</label><input type="number" id="nutri-fiber" class="form-control" placeholder="15"></div>
+          </div>
+
+          <!-- 二、 胺基酸類（18 種） -->
+          <div class="section-title">二、 胺基酸類 (mg / g)</div>
+          <div class="grid-2">
+            <div class="form-group"><label>異白胺酸</label><input type="number" id="nutri-aa-1" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>白胺酸</label><input type="number" id="nutri-aa-2" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>離胺酸</label><input type="number" id="nutri-aa-3" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>甲硫胺酸</label><input type="number" id="nutri-aa-4" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>苯丙胺酸</label><input type="number" id="nutri-aa-5" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>羥丁胺酸 (蘇胺酸)</label><input type="number" id="nutri-aa-6" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>色胺酸</label><input type="number" id="nutri-aa-7" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>纈胺酸</label><input type="number" id="nutri-aa-8" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>組胺酸</label><input type="number" id="nutri-aa-9" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>精胺酸</label><input type="number" id="nutri-aa-10" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>丙胺酸</label><input type="number" id="nutri-aa-11" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>甘胺酸</label><input type="number" id="nutri-aa-12" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>麩胺酸</label><input type="number" id="nutri-aa-13" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>脯胺酸</label><input type="number" id="nutri-aa-14" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>絲胺酸</label><input type="number" id="nutri-aa-15" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>胱胺酸</label><input type="number" id="nutri-aa-16" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>酪胺酸</label><input type="number" id="nutri-aa-17" class="form-control" placeholder="0"></div>
+            <div class="form-group"><label>天門冬胺酸</label><input type="number" id="nutri-aa-18" class="form-control" placeholder="0"></div>
+          </div>
+
+          <!-- 三、 維生素類（12 種） -->
+          <div class="section-title">三、 維生素類</div>
+          <div class="grid-2">
+            <div class="form-group"><label>維生素 A</label><input type="number" id="nutri-vit-a" class="form-control" placeholder="ug RE"></div>
+            <div class="form-group"><label>維生素 B1</label><input type="number" id="nutri-vit-b1" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>維生素 B2</label><input type="number" id="nutri-vit-b2" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>維生素 B6</label><input type="number" id="nutri-vit-b6" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>維生素 B12</label><input type="number" id="nutri-vit-b12" class="form-control" placeholder="ug"></div>
+            <div class="form-group"><label>維生素 C</label><input type="number" id="nutri-vit-c" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>維生素 D</label><input type="number" id="nutri-vit-d" class="form-control" placeholder="IU / ug"></div>
+            <div class="form-group"><label>維生素 E</label><input type="number" id="nutri-vit-e" class="form-control" placeholder="mg alpha-TE"></div>
+            <div class="form-group"><label>菸鹼素</label><input type="number" id="nutri-niacin" class="form-control" placeholder="mg NE"></div>
+            <div class="form-group"><label>葉酸</label><input type="number" id="nutri-folate" class="form-control" placeholder="ug"></div>
+            <div class="form-group"><label>泛酸</label><input type="number" id="nutri-pantothenic" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>生物素</label><input type="number" id="nutri-biotin" class="form-control" placeholder="ug"></div>
+          </div>
+
+          <!-- 四、 礦物質與電解質（10 種） -->
+          <div class="section-title">四、 礦物質與電解質</div>
+          <div class="grid-2">
+            <div class="form-group"><label>鈉 (mg)</label><input type="number" id="nutri-sodium" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>鈣 (mg)</label><input type="number" id="nutri-calcium" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>磷 (mg)</label><input type="number" id="nutri-phosphorus" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>鐵 (mg)</label><input type="number" id="nutri-iron" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>碘 (ug)</label><input type="number" id="nutri-iodine" class="form-control" placeholder="ug"></div>
+            <div class="form-group"><label>鎂 (mg)</label><input type="number" id="nutri-magnesium" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>鋅 (mg)</label><input type="number" id="nutri-zinc" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>鉀 (mg)</label><input type="number" id="nutri-potassium" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>銅 (mg)</label><input type="number" id="nutri-copper" class="form-control" placeholder="mg"></div>
+            <div class="form-group"><label>錳 (mg)</label><input type="number" id="nutri-manganese" class="form-control" placeholder="mg"></div>
+          </div>
+
+          <button class="btn" onclick="saveNutritionRecord()">➕ 新增餐點並累加至今日總量</button>
+        </div>
+      </div>
+
+      <!-- 分頁三：歷史日期個別資料列表 -->
+      <div id="tab-content-history" class="hidden">
+        <div class="card">
+          <div class="card-title">📋 用戶歷史健康紀錄列表</div>
+          <p style="font-size: 12px; color: var(--sub-text); margin-bottom: 12px;">點擊任一筆日期即可查看該日的詳細健康與詳細營養明細</p>
+          <ul id="history-date-list" class="history-list"></ul>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- 詳細歷史報告彈跳視窗 Modal -->
+  <div id="history-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 id="modal-title" style="font-size: 16px; font-weight: 700;">📅 詳細歷史紀錄</h3>
+        <button class="btn btn-secondary" style="width: auto; padding: 6px 12px; margin-top: 0;" onclick="closeHistoryModal()">關閉</button>
+      </div>
+      <div id="modal-body">
+        <!-- 動態載入詳細報告 -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let db = JSON.parse(localStorage.getItem('health_app_v17_db')) || { users: [] };
+    let currentUserIndex = null;
+    let chartInstance = null;
+
+    function saveDB() {
+      try {
+        localStorage.setItem('health_app_v17_db', JSON.stringify(db));
+        return true;
+      } catch (err) {
+        console.error('儲存至 LocalStorage 失敗:', err);
+        return false;
+      }
+    }
+
+    function init() {
+      const now = new Date();
+      const localDate = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+      const localTime = now.toTimeString().split(' ')[0].substring(0, 5);
+
+      const recDateEl = document.getElementById('record-date');
+      const recTimeEl = document.getElementById('record-time');
+      const nutDateEl = document.getElementById('nutri-date');
+      const nutTimeEl = document.getElementById('nutri-time');
+
+      if (recDateEl) recDateEl.value = localDate;
+      if (recTimeEl) recTimeEl.value = localTime;
+      if (nutDateEl) nutDateEl.value = localDate;
+      if (nutTimeEl) nutTimeEl.value = localTime;
+      
+      renderUserList();
+    }
+
+    function switchTab(tabName) {
+      const btnRecord = document.getElementById('tab-btn-record');
+      const btnNutrition = document.getElementById('tab-btn-nutrition');
+      const btnHistory = document.getElementById('tab-btn-history');
+      
+      const contentRecord = document.getElementById('tab-content-record');
+      const contentNutrition = document.getElementById('tab-content-nutrition');
+      const contentHistory = document.getElementById('tab-content-history');
+
+      if (btnRecord) btnRecord.classList.remove('active');
+      if (btnNutrition) btnNutrition.classList.remove('active');
+      if (btnHistory) btnHistory.classList.remove('active');
+      if (contentRecord) contentRecord.classList.add('hidden');
+      if (contentNutrition) contentNutrition.classList.add('hidden');
+      if (contentHistory) contentHistory.classList.add('hidden');
+
+      if (tabName === 'record') {
+        if (btnRecord) btnRecord.classList.add('active');
+        if (contentRecord) contentRecord.classList.remove('hidden');
+        loadDateRecord();
+      } else if (tabName === 'nutrition') {
+        if (btnNutrition) btnNutrition.classList.add('active');
+        if (contentNutrition) contentNutrition.classList.remove('hidden');
+        loadNutritionRecord();
+      } else if (tabName === 'history') {
+        if (btnHistory) btnHistory.classList.add('active');
+        if (contentHistory) contentHistory.classList.remove('hidden');
+        renderHistoryList();
+      }
+    }
+
+    function renderUserList() {
+      const list = document.getElementById('user-list');
+      if (!list) return;
+      list.innerHTML = '';
+      
+      if (db.users.length === 0) {
+        list.innerHTML = '<li style="padding:12px; color:var(--sub-text); text-align:center;">暫無用戶，請在下方新增</li>';
+      } else {
+        db.users.forEach((u, index) => {
+          const li = document.createElement('li');
+          li.className = 'user-item';
+          li.innerHTML = `
+            <span><strong>${u.name}</strong> ${u.profile ? `(${u.profile.gender === 'male' ? '男' : '女'})` : '<span style="color:var(--warning)">(未設定資料)</span>'}</span>
+            <span style="color:var(--primary); font-size:14px;">登入 &rsaquo;</span>
+          `;
+          li.onclick = () => loginUser(index);
+          list.appendChild(li);
+        });
+      }
+
+      const addCard = document.getElementById('add-user-card');
+      if (addCard) {
+        if (db.users.length >= 5) {
+          addCard.classList.add('hidden');
+        } else {
+          addCard.classList.remove('hidden');
+        }
+      }
+    }
+
+    function addUser() {
+      const nameInput = document.getElementById('new-username');
+      if (!nameInput) return;
+      const name = nameInput.value.trim();
+      if (!name) return alert('請輸入用戶姓名');
+      if (db.users.length >= 5) return alert('用戶上限為 5 位');
+
+      db.users.push({ name: name, profile: null, records: {} });
+      saveDB();
+      nameInput.value = '';
+      renderUserList();
+    }
+
+    function loginUser(index) {
+      currentUserIndex = index;
+      const u = db.users[currentUserIndex];
+      const headerTitle = document.getElementById('header-title');
+      const headerBtn = document.getElementById('header-btn');
+      const viewLogin = document.getElementById('view-login');
+      const viewProfileSetup = document.getElementById('view-profile-setup');
+      const viewMain = document.getElementById('view-main');
+
+      if (headerTitle) headerTitle.innerText = `用戶：${u.name}`;
+      if (headerBtn) headerBtn.classList.remove('hidden');
+      if (viewLogin) viewLogin.classList.add('hidden');
+
+      if (!u.profile) {
+        if (viewProfileSetup) viewProfileSetup.classList.remove('hidden');
+      } else {
+        if (viewMain) viewMain.classList.remove('hidden');
+        switchTab('record');
+        loadDateRecord();
+      }
+    }
+
+    function logout() {
+      currentUserIndex = null;
+      const headerTitle = document.getElementById('header-title');
+      const headerBtn = document.getElementById('header-btn');
+      const viewLogin = document.getElementById('view-login');
+      const viewProfileSetup = document.getElementById('view-profile-setup');
+      const viewMain = document.getElementById('view-main');
+
+      if (headerTitle) headerTitle.innerText = '個人健康評估助手';
+      if (headerBtn) headerBtn.classList.add('hidden');
+      if (viewLogin) viewLogin.classList.remove('hidden');
+      if (viewProfileSetup) viewProfileSetup.classList.add('hidden');
+      if (viewMain) viewMain.classList.add('hidden');
+      renderUserList();
+    }
+
+    function saveInitialProfile() {
+      const genderEl = document.getElementById('init-gender');
+      const heightEl = document.getElementById('init-height');
+      const bloodEl = document.getElementById('init-blood');
+
+      if (!genderEl || !heightEl || !bloodEl) return;
+
+      const gender = genderEl.value;
+      const height = parseFloat(heightEl.value);
+      const blood = bloodEl.value;
+
+      if (!height || height <= 0) return alert('請輸入有效身高');
+
+      db.users[currentUserIndex].profile = { gender, height, blood };
+      saveDB();
+
+      const viewProfileSetup = document.getElementById('view-profile-setup');
+      const viewMain = document.getElementById('view-main');
+
+      if (viewProfileSetup) viewProfileSetup.classList.add('hidden');
+      if (viewMain) viewMain.classList.remove('hidden');
+      switchTab('record');
+      loadDateRecord();
+    }
+
+    function loadDateRecord() {
+      const dateEl = document.getElementById('record-date');
+      if (!dateEl) return;
+      const dateKey = dateEl.value;
+      const u = db.users[currentUserIndex];
+      const rec = (u && u.records && u.records[dateKey]) ? u.records[dateKey] : null;
+
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val !== undefined && val !== null ? val : '';
+      };
+
+      if (rec) {
+        setVal('inp-weight', rec.weight);
+        setVal('inp-bmr', rec.bmr);
+        setVal('inp-bmi', rec.bmi);
+        setVal('inp-fat-rate', rec.fatRate);
+        setVal('inp-fat-weight', rec.fatWeight);
+        setVal('inp-muscle-rate', rec.muscleRate);
+        setVal('inp-muscle-weight', rec.muscleWeight);
+        setVal('inp-protein-rate', rec.proteinRate);
+        setVal('inp-water-rate', rec.waterRate);
+        setVal('inp-subfat-rate', rec.subfatRate);
+        setVal('inp-skel-rate', rec.skelRate);
+        setVal('inp-skel-weight', rec.skelWeight);
+        setVal('inp-visceral', rec.visceral);
+        setVal('inp-bone-mass', rec.boneMass);
+        setVal('inp-body-age', rec.bodyAge);
+        setVal('inp-score', rec.score);
+        setVal('inp-mood', rec.mood);
+        setVal('inp-exercise', rec.exercise || 'none');
+        setVal('inp-sleep-start', rec.sleepStart || '23:00');
+        setVal('inp-sleep-end', rec.sleepEnd || '07:00');
+        setVal('inp-sleep-quality', rec.sleepQuality || 'normal');
+      } else {
+        ['inp-weight','inp-bmr','inp-bmi','inp-fat-rate','inp-fat-weight','inp-muscle-rate','inp-muscle-weight',
+         'inp-protein-rate','inp-water-rate','inp-subfat-rate','inp-skel-rate','inp-skel-weight','inp-visceral',
+         'inp-bone-mass','inp-body-age','inp-score','inp-mood'].forEach(id => setVal(id, ''));
+      }
+
+      renderAnalysis();
+      renderChart();
+    }
+
+    const recDateElem = document.getElementById('record-date');
+    const nutriDateElem = document.getElementById('nutri-date');
+    if (recDateElem) recDateElem.addEventListener('change', loadDateRecord);
+    if (nutriDateElem) nutriDateElem.addEventListener('change', loadNutritionRecord);
+
+    function loadNutritionRecord() {
+      if (currentUserIndex === null || currentUserIndex === undefined) return;
+      renderNutritionSummary();
+      renderMealsHistory();
+    }
+
+    // 新增餐點並自動累加至當日總量
+    function saveNutritionRecord() {
+      try {
+        if (currentUserIndex === null || currentUserIndex === undefined) {
+          alert('❌ 失敗：尚未登入用戶，請先回到首頁選擇用戶！');
+          return;
+        }
+
+        const u = db.users[currentUserIndex];
+        const dateEl = document.getElementById('nutri-date');
+        const timeEl = document.getElementById('nutri-time');
+        
+        if (!dateEl || !dateEl.value) {
+          alert('❌ 失敗：請選擇有效的紀錄日期！');
+          return;
+        }
+
+        const dateKey = dateEl.value;
+        const timeVal = timeEl ? timeEl.value : '08:00';
+
+        if (!u.records) u.records = {};
+        if (!u.records[dateKey]) {
+          u.records[dateKey] = { weight: 0, bmr: 1400 };
+        }
+        if (!u.records[dateKey].meals) {
+          u.records[dateKey].meals = [];
+        }
+
+        const getNum = (id) => {
+          const el = document.getElementById(id);
+          return el ? (parseFloat(el.value) || 0) : 0;
+        };
+
+        const getStr = (id) => {
+          const el = document.getElementById(id);
+          return el ? el.value : '';
+        };
+
+        const aaArr = [];
+        for(let i=1; i<=18; i++) {
+          aaArr.push(getNum(`nutri-aa-${i}`));
+        }
+
+        const vitArr = ['a','b1','b2','b6','b12','c','d','e','niacin','folate','pantothenic','biotin'].map(v => 
+          getNum(`nutri-vit-${v}`)
+        );
+
+        const minArr = ['sodium','calcium','phosphorus','iron','iodine','magnesium','zinc','potassium','copper','manganese'].map(m => 
+          getNum(`nutri-${m}`)
+        );
+
+        const mealObj = {
+          id: Date.now(),
+          time: timeVal,
+          desc: getStr('nutri-meal-desc') || '一般餐點',
+          water: getNum('nutri-water'),
+          calories: getNum('nutri-calories'),
+          protein: getNum('nutri-protein'),
+          fat: getNum('nutri-fat'),
+          carb: getNum('nutri-carb'),
+          satFat: getNum('nutri-sat-fat'),
+          transFat: getNum('nutri-trans-fat'),
+          sugar: getNum('nutri-sugar'),
+          fiber: getNum('nutri-fiber'),
+          aa: aaArr,
+          vitamins: vitArr,
+          minerals: minArr
+        };
+
+        u.records[dateKey].meals.push(mealObj);
+        recalculateDailyNutrition(dateKey);
+
+        const isSaved = saveDB();
+        
+        if (isSaved) {
+          renderNutritionSummary();
+          renderMealsHistory();
+          alert(`✅ 成功新增餐點！\n已自動累加至 ${dateKey} 的營養與水分總量中。`);
+        } else {
+          alert('❌ 失敗：瀏覽器 LocalStorage 寫入失敗。');
+        }
+      } catch (err) {
+        console.error('saveNutritionRecord 發生未預期錯誤:', err);
+        alert('❌ 發生未預期錯誤: ' + err.message);
+      }
+    }
+
+    function recalculateDailyNutrition(dateKey) {
+      const u = db.users[currentUserIndex];
+      const meals = u.records[dateKey].meals || [];
+
+      if (meals.length === 0) {
+        u.records[dateKey].nutrition = null;
+        return;
+      }
+
+      let total = {
+        water: 0, calories: 0, protein: 0, fat: 0, carb: 0,
+        satFat: 0, transFat: 0, sugar: 0, fiber: 0,
+        aa: new Array(18).fill(0),
+        vitamins: new Array(12).fill(0),
+        minerals: new Array(10).fill(0)
+      };
+
+      meals.forEach(m => {
+        total.water += m.water;
+        total.calories += m.calories;
+        total.protein += m.protein;
+        total.fat += m.fat;
+        total.carb += m.carb;
+        total.satFat += m.satFat;
+        total.transFat += m.transFat;
+        total.sugar += m.sugar;
+        total.fiber += m.fiber;
+
+        for(let i=0; i<18; i++) total.aa[i] += (m.aa[i] || 0);
+        for(let i=0; i<12; i++) total.vitamins[i] += (m.vitamins[i] || 0);
+        for(let i=0; i<10; i++) total.minerals[i] += (m.minerals[i] || 0);
+      });
+
+      u.records[dateKey].nutrition = total;
+    }
+
+    function deleteMeal(mealId) {
+      const dateEl = document.getElementById('nutri-date');
+      if (!dateEl) return;
+      const dateKey = dateEl.value;
+      const u = db.users[currentUserIndex];
+
+      if (u && u.records && u.records[dateKey] && u.records[dateKey].meals) {
+        u.records[dateKey].meals = u.records[dateKey].meals.filter(m => m.id !== mealId);
+        recalculateDailyNutrition(dateKey);
+        saveDB();
+        renderNutritionSummary();
+        renderMealsHistory();
+        alert('🗑️ 已刪除該筆餐點紀錄並重新計算總量。');
+      }
+    }
+
+    // 結算並封存今日數據
+    function resetTodayNutrition() {
+      const dateEl = document.getElementById('nutri-date');
+      if (!dateEl) return;
+      const dateKey = dateEl.value;
+      const u = db.users[currentUserIndex];
+
+      if (confirm(`確定要結算並封存 ${dateKey} 的今日營養數據嗎？\n\n• 封存後，當前紀錄將完整保留在「歷史列表」中供隨時詳細檢視。\n• 同時將清空當前餐點，讓您可以開始記錄新的一天。`)) {
+        if (u && u.records && u.records[dateKey]) {
+          recalculateDailyNutrition(dateKey);
+          // 將當前餐點歸檔至 archivedMeals 以供歷史檢視，並保留 nutrition 總結
+          u.records[dateKey].archivedMeals = [...(u.records[dateKey].meals || [])];
+          u.records[dateKey].meals = [];
+
+          saveDB();
+          renderNutritionSummary();
+          renderMealsHistory();
+          alert(`✅ 結算成功！\n${dateKey} 的營養明細與總量已成功封存至歷史紀錄。`);
+        }
+      }
+    }
+
+    function renderMealsHistory() {
+      const dateEl = document.getElementById('nutri-date');
+      const container = document.getElementById('meals-history-list');
+      if (!dateEl || !container) return;
+
+      const dateKey = dateEl.value;
+      const u = db.users[currentUserIndex];
+      const meals = (u && u.records && u.records[dateKey] && u.records[dateKey].meals) ? u.records[dateKey].meals : [];
+
+      if (meals.length === 0) {
+        container.innerHTML = '<div style="color:var(--sub-text); text-align:center; padding:10px;">今日尚無新增任何餐點紀錄（或已完成結算封存）</div>';
+        return;
+      }
+
+      container.innerHTML = '';
+      meals.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'meal-item';
+        div.innerHTML = `
+          <div>
+            <strong>[${m.time}] ${m.desc}</strong>
+            <div style="font-size: 12px; color: var(--sub-text);">🔥 熱量: ${m.calories} kcal | 💧 水分: ${m.water} c.c. | 蛋白質: ${m.protein}g</div>
+          </div>
+          <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 12px; margin-top:0;" onclick="deleteMeal(${m.id})">刪除</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderNutritionSummary() {
+      const dateEl = document.getElementById('nutri-date');
+      const box = document.getElementById('nutri-summary-box');
+      if (!dateEl || !box) return;
+
+      const dateKey = dateEl.value;
+      const u = db.users[currentUserIndex];
+
+      if (!u || !u.records || !u.records[dateKey] || !u.records[dateKey].nutrition) {
+        box.innerHTML = '<div style="color:var(--sub-text); text-align:center; padding:12px;">尚無今日累計飲食營養紀錄，請於下方新增餐點</div>';
+        return;
+      }
+
+      const nut = u.records[dateKey].nutrition;
+      const bmr = u.records[dateKey].bmr || 1400;
+
+      const isCaloriesSufficient = nut.calories >= bmr;
+      const isWaterSufficient = nut.water >= 2000;
+      const isProteinSufficient = nut.protein >= 50;
+
+      box.innerHTML = `
+        <div style="font-size: 14px; line-height: 1.8;">
+          <div>🔥 <b>今日累計攝取熱量：</b> ${nut.calories.toFixed(1)} kcal (基礎代謝率 BMR: ${bmr} kcal)</div>
+          <div><span class="tag ${isCaloriesSufficient ? '' : 'tag-alert'}">${isCaloriesSufficient ? '✔ 熱量大於基礎代謝量 (能量充足)' : '⚠ 熱量低於基礎代謝量 (注意過度節食)'}</span></div>
+          <br>
+          <div>💧 <b>今日總飲水量：</b> ${nut.water} c.c.</div>
+          <div><span class="tag ${isWaterSufficient ? '' : 'tag-alert'}">${isWaterSufficient ? '✔ 水分攝取達標 (>= 2000c.c.)' : '⚠ 水分攝取不足，建議補水'}</span></div>
+          <br>
+          <div>🛡️ <b>三大營養素總計：</b> 蛋白質 ${nut.protein.toFixed(1)}g ${isProteinSufficient ? '(達標)' : '(偏低)'} | 脂肪 ${nut.fat.toFixed(1)}g (飽和:${nut.satFat.toFixed(1)}g / 反式:${nut.transFat.toFixed(1)}g) | 碳水 ${nut.carb.toFixed(1)}g (糖:${nut.sugar.toFixed(1)}g / 纖維:${nut.fiber.toFixed(1)}g)</div>
+          <br>
+          <div>🧪 <b>微量營養素累計：</b> 已自動加總所有餐點之完整胺基酸（18項）、維生素（12項）與礦物質（10項）數據。</div>
+        </div>
+      `;
+    }
+
+    function renderHistoryList() {
+      const u = db.users[currentUserIndex];
+      const listEl = document.getElementById('history-date-list');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      if (!u || !u.records || Object.keys(u.records).length === 0) {
+        listEl.innerHTML = '<li style="padding:16px; text-align:center; color:var(--sub-text);">尚無歷史健康紀錄</li>';
+        return;
+      }
+
+      const sortedDates = Object.keys(u.records).sort().reverse();
+      sortedDates.forEach(dateStr => {
+        const rec = u.records[dateStr];
+        const hasNutri = rec.nutrition ? ` | 總飲水: ${rec.nutrition.water}c.c. | 總熱量: ${rec.nutrition.calories.toFixed(0)}kcal` : '';
+        const li = document.createElement('li');
+        li.className = 'history-item';
+        li.innerHTML = `
+          <div>
+            <strong>📅 ${dateStr}</strong>
+            <div style="font-size: 12px; color: var(--sub-text); margin-top: 2px;">體重: ${rec.weight || 'N/A'} kg | 體脂: ${rec.fatRate || 'N/A'}%${hasNutri}</div>
+          </div>
+          <span style="color: var(--primary); font-size: 14px;">詳細明細 &rsaquo;</span>
+        `;
+        // 點擊時彈出詳細明細報告
+        li.onclick = () => showHistoryDetailModal(dateStr);
+        listEl.appendChild(li);
+      });
+    }
+
+    // 顯示詳細歷史報告 Modal
+    function showHistoryDetailModal(dateStr) {
+      const u = db.users[currentUserIndex];
+      const rec = u.records[dateStr];
+      const modal = document.getElementById('history-modal');
+      const title = document.getElementById('modal-title');
+      const body = document.getElementById('modal-body');
+
+      title.innerText = `📅 ${dateStr} 健康與營養詳細報告`;
+
+      let html = '';
+
+      // 1. 身體組成與體脂數據
+      html += `<div class="section-title">一、 身體組成與生活評估</div>`;
+      if (rec.weight) {
+        html += `
+          <div style="font-size: 13px; line-height: 1.6; margin-bottom: 12px;">
+            <div>⚖️ <b>體重：</b> ${rec.weight} kg | <b>BMI：</b> ${rec.bmi} | <b>體脂肪率：</b> ${rec.fatRate}%</div>
+            <div>⚡ <b>基礎代謝率：</b> ${rec.bmr} kcal | <b>肌肉量：</b> ${rec.muscleWeight} kg | <b>內臟脂肪：</b> ${rec.visceral}</div>
+            <div>😊 <b>心情：</b> ${rec.mood}/10 | <b>睡眠：</b> ${rec.sleepStart} ~ ${rec.sleepEnd}</div>
+          </div>
+        `;
+      } else {
+        html += `<div style="font-size: 13px; color: var(--sub-text); margin-bottom: 12px;">當日無體脂機量測數據</div>`;
+      }
+
+      // 2. 營養總結
+      html += `<div class="section-title">二、 當日營養素總攝取量</div>`;
+      if (rec.nutrition) {
+        const nut = rec.nutrition;
+        html += `
+          <div style="font-size: 13px; line-height: 1.6; margin-bottom: 12px;">
+            <div>🔥 <b>總熱量：</b> ${nut.calories.toFixed(1)} kcal | 💧 <b>總水分：</b> ${nut.water} c.c.</div>
+            <div>🛡️ <b>蛋白質：</b> ${nut.protein.toFixed(1)}g | 脂肪: ${nut.fat.toFixed(1)}g | 碳水: ${nut.carb.toFixed(1)}g (膳食纖維: ${nut.fiber.toFixed(1)}g)</div>
+          </div>
+        `;
+      } else {
+        html += `<div style="font-size: 13px; color: var(--sub-text); margin-bottom: 12px;">當日無營養素攝取紀錄</div>`;
+      }
+
+      // 3. 各餐詳細明細
+      const allMeals = [...(rec.meals || []), ...(rec.archivedMeals || [])];
+      html += `<div class="section-title">三、 當日各餐進食明細 (${allMeals.length} 餐)</div>`;
+      if (allMeals.length > 0) {
+        allMeals.forEach((m, idx) => {
+          html += `
+            <div style="background:var(--bg-color); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px;">
+              <div><b>#${idx+1} [${m.time}] ${m.desc}</b></div>
+              <div style="color:var(--sub-text); margin-top: 4px;">🔥 熱量: ${m.calories} kcal | 💧 水分: ${m.water} c.c. | 蛋白質: ${m.protein}g | 脂肪: ${m.fat}g | 碳水: ${m.carb}g</div>
+              <div style="font-size: 11px; color: var(--sub-text); margin-top: 2px;">🧪 胺基酸/維生素/礦物質細項已完整記錄並納入總計</div>
+            </div>
+          `;
+        });
+      } else {
+        html += `<div style="font-size: 13px; color: var(--sub-text);">無各餐明細資料</div>`;
+      }
+
+      body.innerHTML = html;
+      modal.classList.remove('hidden');
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('history-modal').classList.add('hidden');
+    }
+
+    function handleExcelImport(event) {
+      if (currentUserIndex === null || currentUserIndex === undefined) {
+        alert('❌ 失敗：尚未登入用戶，請先選擇用戶！');
+        return;
+      }
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+          let importedCount = 0;
+          const u = db.users[currentUserIndex];
+          if (!u.records) u.records = {};
+
+          if (rows.length < 2) {
+            alert('❌ 失敗：Excel 檔案內容為空或格式不符');
+            return;
+          }
+
+          const header = rows[0].map(h => String(h || '').trim());
+          const getColIdx = (names) => {
+            for (let name of names) {
+              const idx = header.findIndex(h => h.includes(name));
+              if (idx !== -1) return idx;
+            }
+            return -1;
+          };
+
+          const colTime = getColIdx(['稱重時間', '時間', 'Date']);
+          const colWeight = getColIdx(['體重', 'Weight']);
+          const colBmr = getColIdx(['BMR', '基礎代謝']);
+          const colBmi = getColIdx(['BMI']);
+          const colFatRate = getColIdx(['體脂率', '體脂肪率']);
+          const colFatWeight = getColIdx(['脂肪量', '脂肪重']);
+          const colMuscleRate = getColIdx(['肌肉率']);
+          const colMuscleWeight = getColIdx(['肌肉量', '肌肉重']);
+          const colProteinRate = getColIdx(['內蛋白質率', '蛋白質率']);
+          const colWaterRate = getColIdx(['體水分率', '水分率']);
+          const colSubFatRate = getColIdx(['皮下脂肪率']);
+          const colSkelRate = getColIdx(['骨骼肌率']);
+          const colSkelWeight = getColIdx(['骨骼肌重']);
+          const colVisceral = getColIdx(['內臟脂肪']);
+          const colBoneMass = getColIdx(['骨量']);
+          const colBodyAge = getColIdx(['身體年齡']);
+          const colScore = getColIdx(['身體得分', '評分']);
+
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
+
+            let timeVal = colTime !== -1 ? row[colTime] : row[3];
+            if (!timeVal) continue;
+
+            let dateStr = '';
+            let timeStr = '08:00';
+            if (typeof timeVal === 'number') {
+              const excelDate = new Date((timeVal - (25567 + 2)) * 86400 * 1000);
+              dateStr = excelDate.toISOString().split('T')[0];
+              timeStr = excelDate.toTimeString().substring(0, 5);
+            } else {
+              const fullStr = String(timeVal).trim();
+              dateStr = fullStr.substring(0, 10);
+              if (fullStr.length > 10) timeStr = fullStr.substring(11, 16);
+            }
+
+            if (!dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) continue;
+
+            const w = colWeight !== -1 ? parseFloat(row[colWeight]) : parseFloat(row[4]) || 60;
+            const fatRate = colFatRate !== -1 ? parseFloat(row[colFatRate]) : parseFloat(row[6]) || 20;
+            const bmr = colBmr !== -1 ? parseFloat(row[colBmr]) : parseFloat(row[18]) || 1400;
+            const bmi = colBmi !== -1 ? parseFloat(row[colBmi]) : parseFloat(row[13]) || 22;
+            const muscleRate = colMuscleRate !== -1 ? parseFloat(row[colMuscleRate]) : parseFloat(row[15]) || 40;
+            const muscleWeight = colMuscleWeight !== -1 ? parseFloat(row[colMuscleWeight]) : (w * muscleRate / 100);
+            const fatWeight = colFatWeight !== -1 ? parseFloat(row[colFatWeight]) : (w * fatRate / 100);
+            const proteinRate = colProteinRate !== -1 ? parseFloat(row[colProteinRate]) : 17;
+            const waterRate = colWaterRate !== -1 ? parseFloat(row[colWaterRate]) : 55;
+            const subfatRate = colSubFatRate !== -1 ? parseFloat(row[colSubFatRate]) : fatRate * 0.85;
+            const skelRate = colSkelRate !== -1 ? parseFloat(row[colSkelRate]) : muscleRate * 0.75;
+            const skelWeight = colSkelWeight !== -1 ? parseFloat(row[colSkelWeight]) : muscleWeight * 0.75;
+            const visceral = colVisceral !== -1 ? parseFloat(row[colVisceral]) : 7;
+            const boneMass = colBoneMass !== -1 ? parseFloat(row[colBoneMass]) : 2.6;
+            const bodyAge = colBodyAge !== -1 ? parseFloat(row[colBodyAge]) : 25;
+            const score = colScore !== -1 ? parseFloat(row[colScore]) : 85;
+
+            const h = u.profile.height / 100;
+            const stdWeight = (22 * h * h).toFixed(1);
+            const ffm = (w - fatWeight).toFixed(1);
+            const weightDiff = (w - stdWeight).toFixed(1);
+
+            if (!u.records[dateStr]) u.records[dateStr] = {};
+            u.records[dateStr] = {
+              ...u.records[dateStr],
+              time: timeStr,
+              weight: w, bmr: bmr, bmi: bmi, fatRate: fatRate, fatWeight: fatWeight,
+              muscleRate: muscleRate, muscleWeight: muscleWeight, proteinRate: proteinRate,
+              waterRate: waterRate, subfatRate: subfatRate, skelRate: skelRate,
+              skelWeight: skelWeight, visceral: visceral, boneMass: boneMass, bodyAge: bodyAge,
+              score: score, stdWeight: stdWeight, ffm: ffm, weightDiff: weightDiff,
+              fatControl: '0.0', muscleControl: '0.0', obesityLevel: bmi >= 24 ? '偏高' : '標準',
+              bodyType: '標準型', mood: 8, exercise: 'moderate', sleepStart: '23:00',
+              sleepEnd: '07:00', sleepQuality: 'good'
+            };
+            importedCount++;
+          }
+
+          if (importedCount > 0) {
+            saveDB();
+            alert(`✅ 成功從 Excel 匯入 ${importedCount} 筆健康紀錄！`);
+            loadDateRecord();
+          } else {
+            alert('❌ 失敗：未能成功解析 Excel 資料。');
+          }
+        } catch (err) {
+          alert('❌ 失敗：解析 Excel 檔案發生錯誤：' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function calculateAndSave() {
+      if (currentUserIndex === null || currentUserIndex === undefined) {
+        alert('❌ 失敗：尚未登入用戶，請先選擇用戶！');
+        return;
+      }
+      const u = db.users[currentUserIndex];
+      const rDate = document.getElementById('record-date');
+      const rTime = document.getElementById('record-time');
+      if (!rDate) return;
+
+      const dateKey = rDate.value;
+      const timeVal = rTime ? rTime.value : '08:00';
+      const h = u.profile.height / 100;
+
+      const getNum = (id) => {
+        const el = document.getElementById(id);
+        return el ? (parseFloat(el.value) || 0) : 0;
+      };
+
+      const w = getNum('inp-weight');
+      const fatRate = getNum('inp-fat-rate');
+      const muscleRate = getNum('inp-muscle-rate');
+      const proteinRate = getNum('inp-protein-rate');
+      const waterRate = getNum('inp-water-rate');
+      const visceral = getNum('inp-visceral');
+      const bodyAge = getNum('inp-body-age') || 25;
+      const boneMass = getNum('inp-bone-mass') || 2.5;
+
+      const mood = parseInt(getNum('inp-mood')) || 7;
+      const exerciseEl = document.getElementById('inp-exercise');
+      const exercise = exerciseEl ? exerciseEl.value : 'none';
+      const sleepStart = document.getElementById('inp-sleep-start') ? document.getElementById('inp-sleep-start').value : '23:00';
+      const sleepEnd = document.getElementById('inp-sleep-end') ? document.getElementById('inp-sleep-end').value : '07:00';
+      const sleepQuality = document.getElementById('inp-sleep-quality') ? document.getElementById('inp-sleep-quality').value : 'normal';
+
+      if (!w || !fatRate) return alert('❌ 失敗：請填寫基礎體重與體脂肪率');
+
+      const bmi = getNum('inp-bmi') || (w / (h * h)).toFixed(1);
+      const fatWeight = getNum('inp-fat-weight') || (w * (fatRate / 100)).toFixed(1);
+      const muscleWeight = getNum('inp-muscle-weight') || (w * (muscleRate / 100)).toFixed(1);
+      const bmr = parseInt(getNum('inp-bmr')) || Math.round(10 * w + 6.25 * (h * 100) - 5 * 25 + (u.profile.gender === 'male' ? 5 : -161));
+
+      const subfatRate = getNum('inp-subfat-rate') || (fatRate * 0.85).toFixed(1);
+      const skelRate = getNum('inp-skel-rate') || (muscleRate * 0.75).toFixed(1);
+      const skelWeight = getNum('inp-skel-weight') || (w * (skelRate / 100)).toFixed(1);
+
+      const stdWeight = (22 * h * h).toFixed(1);
+      const ffm = (w - fatWeight).toFixed(1);
+      const weightDiff = (w - stdWeight).toFixed(1);
+      const fatControl = weightDiff > 0 ? `-${(fatWeight - (stdWeight * 0.18)).toFixed(1)}` : '0.0';
+      const muscleControl = muscleRate < 30 ? `+${(stdWeight * 0.4 - muscleWeight).toFixed(1)}` : '0.0';
+
+      let obesityLevel = '標準';
+      if (bmi < 18.5) obesityLevel = '過輕';
+      else if (bmi >= 24 && bmi < 27) obesityLevel = '偏高';
+      else if (bmi >= 27) obesityLevel = '肥胖';
+
+      let bodyType = '標準型';
+      if (fatRate > 25 && bmi >= 24) bodyType = '隱性肥胖';
+      else if (fatRate < 15 && muscleRate > 75) bodyType = '運動員型';
+
+      let score = parseInt(getNum('inp-score')) || 85;
+
+      if (!u.records) u.records = {};
+      if (!u.records[dateKey]) u.records[dateKey] = {};
+
+      u.records[dateKey] = {
+        ...u.records[dateKey],
+        time: timeVal,
+        weight: w, bmr, bmi, fatRate, fatWeight, muscleRate, muscleWeight,
+        proteinRate, waterRate, subfatRate, skelRate, skelWeight, visceral,
+        boneMass, bodyAge, score, stdWeight, ffm, weightDiff, fatControl,
+        muscleControl, obesityLevel, bodyType, mood, exercise, sleepStart,
+        sleepEnd, sleepQuality
+      };
+
+      saveDB();
+      renderAnalysis();
+      renderChart();
+      alert('✅ 成功：健康紀錄已順利儲存！');
+    }
+
+    function renderAnalysis() {
+      const dateEl = document.getElementById('record-date');
+      if (!dateEl) return;
+      const dateKey = dateEl.value;
+      const u = db.users[currentUserIndex];
+      const rec = u && u.records ? u.records[dateKey] : null;
+
+      const grid = document.getElementById('metrics-grid');
+      const alertsList = document.getElementById('alerts-list');
+      const nutriRec = document.getElementById('nutrition-recommendations');
+      const lifeRec = document.getElementById('lifestyle-recommendations');
+
+      if (!rec || !rec.weight) {
+        if (grid) grid.innerHTML = '<div style="grid-column: span 2; text-align:center; color:var(--sub-text); padding:16px;">尚無當日紀錄，請填寫上方數據並點擊儲存</div>';
+        if (alertsList) alertsList.innerHTML = '';
+        if (nutriRec) nutriRec.innerHTML = '';
+        if (lifeRec) lifeRec.innerHTML = '';
+        return;
+      }
+
+      const start = new Date(`2026-01-01T${rec.sleepStart}:00`);
+      let end = new Date(`2026-01-01T${rec.sleepEnd}:00`);
+      if (end < start) end = new Date(`2026-01-02T${rec.sleepEnd}:00`);
+      const sleepHours = ((end - start) / (1000 * 60 * 60)).toFixed(1);
+
+      const metrics = [
+        { icon: '⚖️', t: '1. 體重', v: `${rec.weight} kg`, s: '標準' },
+        { icon: '⚡', t: '2. 基礎代謝率', v: `${rec.bmr} kcal`, s: '標準' },
+        { icon: '📊', t: '3. BMI', v: rec.bmi, s: rec.bmi >= 24 ? '偏高' : '標準' },
+        { icon: '📉', t: '4. 體脂肪率', v: `${rec.fatRate}%`, s: rec.fatRate > 20 ? '偏高' : '標準' },
+        { icon: '🩸', t: '5. 體脂肪重量', v: `${rec.fatWeight} kg`, s: '標準' },
+        { icon: '🥐', t: '6. 肌肉率', v: `${rec.muscleRate}%`, s: '標準' },
+        { icon: '💪', t: '7. 肌肉量', v: `${rec.muscleWeight} kg`, s: '標準' },
+        { icon: '💦', t: '8. 蛋白質率', v: `${rec.proteinRate}%`, s: rec.proteinRate < 16 ? '偏低' : '標準' },
+        { icon: '💧', t: '9. 體水分率', v: `${rec.waterRate}%`, s: rec.waterRate < 55 ? '偏低' : '標準' },
+        { icon: '🥐', t: '10. 皮下脂肪率', v: `${rec.subfatRate}%`, s: '標準' },
+        { icon: '🦴', t: '11. 骨骼肌率', v: `${rec.skelRate}%`, s: '標準' },
+        { icon: '🥩', t: '12. 骨骼肌重', v: `${rec.skelWeight} kg`, s: '標準' },
+        { icon: '⚖️', t: '13. 肥胖等級', v: rec.obesityLevel, s: '標準' },
+        { icon: '📉', t: '14. 脂肪控制', v: `${rec.fatControl} kg`, s: '建議' },
+        { icon: '💪', t: '15. 肌肉控制', v: `${rec.muscleControl} kg`, s: '建議' },
+        { icon: '🎯', t: '16. 體重控制', v: `${rec.weightDiff} kg`, s: '建議' },
+        { icon: '📏', t: '17. 標準體重', v: `${rec.stdWeight} kg`, s: '目標' },
+        { icon: '🧱', t: '18. 無脂肪質量', v: `${rec.ffm} kg`, s: '標準' },
+        { icon: '🫀', t: '19. 內臟脂肪', v: rec.visceral, s: rec.visceral >= 10 ? '偏高' : '標準' },
+        { icon: '🦴', t: '20. 骨量', v: `${rec.boneMass} kg`, s: rec.boneMass < 2.5 ? '偏低' : '標準' },
+        { icon: '👤', t: '21. 身體類型', v: rec.bodyType, s: '評估' },
+        { icon: '🎂', t: '22. 身體年齡', v: `${rec.bodyAge} 歲`, s: '標準' },
+        { icon: '🌟', t: '23. 健康評價', v: rec.score >= 90 ? '非常棒' : '良好', s: '評價' },
+        { icon: '💯', t: '24. 健康評分', v: `${rec.score} 分`, s: '優良' }
+      ];
+
+      if (grid) {
+        grid.innerHTML = '';
+        metrics.forEach(m => {
+          const statusClass = m.s === '偏高' ? 'status-high' : (m.s === '偏低' ? 'status-low' : 'status-normal');
+          grid.innerHTML += `
+            <div class="metric-card">
+              <div class="metric-header"><span class="metric-icon">${m.icon}</span> ${m.t}</div>
+              <div class="metric-value">${m.v}</div>
+              <div class="metric-sub ${statusClass}">${m.s}</div>
+            </div>
+          `;
+        });
+      }
+
+      let alerts = [];
+      let nutrients = new Set();
+      let habits = [];
+
+      if (rec.bmi >= 24) alerts.push('BMI 超過標準區間');
+      if (rec.fatRate > 20) { alerts.push('體脂肪率偏高'); nutrients.add('綠茶萃取物 (EGCG)'); nutrients.add('L-肉鹼'); }
+      if (rec.proteinRate < 16) { alerts.push('蛋白質率不足'); nutrients.add('優質複合蛋白質'); }
+      if (rec.waterRate < 55) { alerts.push('體水分率偏低'); habits.push('每日應飲用至少 2000c.c. 溫開水'); }
+      if (rec.visceral >= 10) { alerts.push('內臟脂肪偏高'); habits.push('減少精緻澱粉與手搖飲料攝取'); }
+      
+      if (rec.mood < 6) {
+        alerts.push('心情壓力指數偏高');
+        nutrients.add('維生素 B 群');
+        nutrients.add('鈣/鎂錠');
+      }
+
+      habits.push(`睡眠作息時間：${rec.sleepStart} ~ ${rec.sleepEnd} (共 ${sleepHours} 小時)`);
+
+      if (alertsList) alertsList.innerHTML = alerts.length ? alerts.map(a => `<span class="tag tag-alert">${a}</span>`).join('') : '<span class="status-normal">各項指標維持良好！</span>';
+      if (nutriRec) nutriRec.innerHTML = Array.from(nutrients).map(n => `<span class="tag">${n}</span>`).join('') || '<span class="tag">綜合維生素（基礎補充）</span>';
+      if (lifeRec) lifeRec.innerHTML = habits.map(h => `<li>${h}</li>`).join('');
+    }
+
+    function renderChart() {
+      const rangeEl = document.getElementById('chart-range');
+      if (!rangeEl) return;
+      const days = parseInt(rangeEl.value);
+      const u = db.users[currentUserIndex];
+      if (!u || !u.records) return;
+
+      const dates = Object.keys(u.records).sort();
+      const slicedDates = dates.slice(-days);
+
+      const weights = slicedDates.map(d => u.records[d].weight || 0);
+      const fats = slicedDates.map(d => u.records[d].fatRate || 0);
+
+      const canvasEl = document.getElementById('healthChart');
+      if (!canvasEl) return;
+      const ctx = canvasEl.getContext('2d');
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: slicedDates,
+          datasets: [
+            {
+              label: '體重 (kg)',
+              data: weights,
+              borderColor: '#007AFF',
+              backgroundColor: 'rgba(0, 122, 255, 0.1)',
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: '體脂率 (%)',
+              data: fats,
+              borderColor: '#FF9500',
+              backgroundColor: 'rgba(255, 149, 0, 0.1)',
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          },
+          scales: {
+            x: { grid: { display: false } },
+            y: { grid: { color: 'rgba(200,200,200,0.15)' } }
+          }
+        }
+      });
+    }
+
+    function exportJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `health_backup_${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedDB = JSON.parse(e.target.result);
+          if (importedDB && importedDB.users) {
+            db = importedDB;
+            saveDB();
+            alert('✅ 成功：成功匯入資料！');
+            renderUserList();
+          } else {
+            alert('❌ 失敗：JSON 格式不符');
+          }
+        } catch (err) {
+          alert('❌ 失敗：讀取 JSON 檔案失敗');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    init();
+  </script>
+</body>
+</html>
