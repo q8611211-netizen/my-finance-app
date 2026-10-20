@@ -105,7 +105,7 @@
         <div class="bg-white dark:bg-zinc-900 w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
             <div class="flex justify-between items-center mb-4 pb-2 border-b border-zinc-100 dark:border-zinc-800">
                 <h3 id="modalTitle" class="text-lg font-bold text-zinc-900 dark:text-white">新增物品資料</h3>
-                <button onclick="closeModal()" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1">
+                <button type="button" onclick="closeModal()" class="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1">
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
@@ -213,7 +213,7 @@
 
     <!-- JavaScript 邏輯 -->
     <script>
-        let items = JSON.parse(localStorage.getItem('inventory_items') || '[cite: 1]');
+        let items = JSON.parse(localStorage.getItem('inventory_items') || '[]');
 
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
@@ -229,14 +229,14 @@
 
         function openModal(id = null) {
             document.getElementById('itemModal').classList.remove('hidden');
-            if (id) {
+            if (id !== null && id !== undefined && id !== '') {
                 document.getElementById('modalTitle').innerText = '編輯物品資料';
-                const item = items.find(i => i.id === id);
+                const item = items.find(i => i.id === Number(id));
                 if (item) {
                     document.getElementById('itemId').value = item.id;
                     document.getElementById('buyDate').value = item.buyDate || '';
                     document.getElementById('brand').value = item.brand || '安麗';
-                    document.getElementById('price').value = item.price || '';
+                    document.getElementById('price').value = item.price !== undefined ? item.price : '';
                     document.getElementById('category').value = item.category || '盥洗用品';
                     document.getElementById('name').value = item.name || '';
                     document.getElementById('quantity').value = item.quantity || 1;
@@ -259,15 +259,24 @@
         }
 
         function saveItem(e) {
-            e.preventDefault();
+            e.preventDefault(); // 阻止表單預設重新整理行為
+            
             const id = document.getElementById('itemId').value;
+            const nameVal = document.getElementById('name').value.trim();
+            const categoryVal = document.getElementById('category').value;
+
+            if (!nameVal) {
+                alert('請填寫產品名稱！');
+                return;
+            }
+
             const data = {
                 id: id ? Number(id) : Date.now(),
                 buyDate: document.getElementById('buyDate').value,
                 brand: document.getElementById('brand').value,
                 price: Number(document.getElementById('price').value) || 0,
-                category: document.getElementById('category').value,
-                name: document.getElementById('name').value,
+                category: categoryVal,
+                name: nameVal,
                 quantity: Number(document.getElementById('quantity').value) || 1,
                 expiryDate: document.getElementById('expiryDate').value,
                 startDate: document.getElementById('startDate').value,
@@ -277,7 +286,11 @@
 
             if (id) {
                 const index = items.findIndex(i => i.id === Number(id));
-                if (index !== -1) items[index] = data;
+                if (index !== -1) {
+                    items[index] = data;
+                } else {
+                    items.unshift(data);
+                }
             } else {
                 items.unshift(data);
             }
@@ -324,7 +337,6 @@
             emptyEl.classList.add('hidden');
 
             listEl.innerHTML = filtered.map(item => {
-                // 計算花費天數與每月預算
                 let daysSpan = '-';
                 let monthlyBudget = '-';
                 if (item.startDate && item.endDate) {
@@ -335,7 +347,7 @@
                     if (diffDays >= 0) {
                         daysSpan = `${diffDays} 天`;
                         if (item.price > 0 && diffDays > 0) {
-                            const months = diffDays / 30.44; // 平均每月天數
+                            const months = diffDays / 30.44; 
                             const budget = item.price / months;
                             monthlyBudget = `NT$ ${Math.round(budget)} / 月`;
                         } else if (item.price > 0 && diffDays === 0) {
@@ -363,7 +375,7 @@
                             <div><span class="text-zinc-400">6. 有效期限：</span>${item.expiryDate || '未填'}</div>
                             <div><span class="text-zinc-400">7-8. 使用區間：</span>${item.startDate || '?'} ~ ${item.endDate || '?'}</div>
                             <div><span class="text-zinc-400">使用天數：</span><span class="font-semibold text-ios-blue">${daysSpan}</span></div>
-                            <div><span class="text-zinc-400">9. 產品保固：</span>${item.warrantyDate || '未填'}</div>
+                            <div><span class="text-zinc-400">9. 產品保固：</span>${item.warrantyDate || 'Unset'}</div>
                             <div class="col-span-2 pt-1 border-t border-zinc-200 dark:border-zinc-700/50 flex justify-between">
                                 <span class="text-zinc-400">換算每月預算消耗：</span>
                                 <span class="font-bold text-ios-green">${monthlyBudget}</span>
@@ -417,7 +429,6 @@
                 } catch (err) {
                     alert('JSON 解析失敗，請檢查檔案格式是否正確。');
                 }
-                // 清空 input 讓重複選取同檔案也能觸發 change
                 event.target.value = '';
             };
             reader.readAsText(file);
