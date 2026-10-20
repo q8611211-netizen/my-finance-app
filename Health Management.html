@@ -547,6 +547,26 @@
           <button class="btn btn-danger" style="margin-top: 12px; font-size: 14px; padding: 10px;" onclick="resetTodayNutrition()">🔄 結算並封存今日數據 (開啟新的一天記錄)</button>
         </div>
 
+        <!-- 管理員專用：常用食物範本管理與快速帶入 -->
+        <div class="card" style="border-left: 4px solid var(--warning);">
+          <div class="card-title">⚙️ 管理員專用：常用食物範本庫</div>
+          <p style="font-size: 12px; color: var(--sub-text); margin-bottom: 12px;">設定固定常吃的食物與營養素，點擊即可一鍵帶入下方表單，免去重複手動填寫。</p>
+          
+          <div class="form-group">
+            <label>⚡ 選擇常用食物範本一鍵代入</label>
+            <div style="display: flex; gap: 8px;">
+              <select id="template-select" class="form-control">
+                <option value="">-- 請選擇常用食物範本 --</option>
+              </select>
+              <button class="btn btn-secondary" style="width: auto; margin-top: 0; padding: 0 16px;" onclick="applyFoodTemplate()">代入表單</button>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px; text-align: right;">
+            <button class="btn btn-secondary" style="width: auto; display: inline-block; font-size: 13px; padding: 6px 12px; margin-top: 0;" onclick="openTemplateModal()">➕ 新增/管理常用食物範本</button>
+          </div>
+        </div>
+
         <!-- 當日各餐進食歷史清單 -->
         <div class="card">
           <div class="card-title">🕒 當日各餐進食歷史紀錄</div>
@@ -678,14 +698,42 @@
     </div>
   </div>
 
+  <!-- 管理員常用食物範本管理 Modal -->
+  <div id="template-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 16px; font-weight: 700;">⚙️ 管理常用食物範本</h3>
+        <button class="btn btn-secondary" style="width: auto; padding: 6px 12px; margin-top: 0;" onclick="closeTemplateModal()">關閉</button>
+      </div>
+      <p style="font-size: 12px; color: var(--sub-text); margin-bottom: 12px;">在此新增或刪除固定食物範本。新增時會抓取目前下方表單填寫的數值作為該範本的預設營養素。</p>
+      
+      <div class="form-group">
+        <label>新範本名稱 (例如：紐崔萊幸福早餐)</label>
+        <input type="text" id="new-template-name" class="form-control" placeholder="請輸入食物名稱">
+      </div>
+      <button class="btn" onclick="saveCurrentAsTemplate()">將目前下方表單數值存為新範本</button>
+
+      <div class="section-title" style="margin-top: 20px;">現有範本清單</div>
+      <ul id="template-list-modal" class="history-list" style="margin-top: 8px;">
+        <!-- 動態載入現有範本 -->
+      </ul>
+    </div>
+  </div>
+
   <script>
-    let db = JSON.parse(localStorage.getItem('health_app_v17_db')) || { users: [] };
+    let db = JSON.parse(localStorage.getItem('health_app_v18_db')) || { users: [], foodTemplates: [
+      {
+        name: '紐崔萊幸福餐 (標準份)',
+        water: 300, calories: 250, protein: 20, fat: 5, carb: 30, satFat: 1, transFat: 0, sugar: 5, fiber: 8,
+        aa: new Array(18).fill(1), vitamins: new Array(12).fill(2), minerals: new Array(10).fill(2)
+      }
+    ]};
     let currentUserIndex = null;
     let chartInstance = null;
 
     function saveDB() {
       try {
-        localStorage.setItem('health_app_v17_db', JSON.stringify(db));
+        localStorage.setItem('health_app_v18_db', JSON.stringify(db));
         return true;
       } catch (err) {
         console.error('儲存至 LocalStorage 失敗:', err);
@@ -709,6 +757,7 @@
       if (nutTimeEl) nutTimeEl.value = localTime;
       
       renderUserList();
+      renderTemplateSelect();
     }
 
     function switchTab(tabName) {
@@ -901,6 +950,133 @@
       if (currentUserIndex === null || currentUserIndex === undefined) return;
       renderNutritionSummary();
       renderMealsHistory();
+      renderTemplateSelect();
+    }
+
+    // 常用食物範本功能
+    function renderTemplateSelect() {
+      const select = document.getElementById('template-select');
+      if (!select) return;
+      select.innerHTML = '<option value="">-- 請選擇常用食物範本 --</option>';
+      if (db.foodTemplates) {
+        db.foodTemplates.forEach((t, idx) => {
+          select.innerHTML += `<option value="${idx}">${t.name} (熱量: ${t.calories}kcal)</option>`;
+        });
+      }
+    }
+
+    function openTemplateModal() {
+      renderTemplateModalList();
+      document.getElementById('template-modal').classList.remove('hidden');
+    }
+
+    function closeTemplateModal() {
+      document.getElementById('template-modal').classList.add('hidden');
+    }
+
+    function renderTemplateModalList() {
+      const list = document.getElementById('template-list-modal');
+      if (!list) return;
+      list.innerHTML = '';
+      if (!db.foodTemplates || db.foodTemplates.length === 0) {
+        list.innerHTML = '<li style="padding:12px; color:var(--sub-text); text-align:center;">尚無常用食物範本</li>';
+        return;
+      }
+      db.foodTemplates.forEach((t, idx) => {
+        list.innerHTML += `
+          <li class="history-item">
+            <div><strong>${t.name}</strong><div style="font-size:12px; color:var(--sub-text);">🔥 熱量: ${t.calories}kcal | 蛋白質: ${t.protein}g</div></div>
+            <button class="btn btn-danger" style="width:auto; padding:6px 12px; font-size:12px; margin-top:0;" onclick="deleteTemplate(${idx})">刪除</button>
+          </li>
+        `;
+      });
+    }
+
+    function saveCurrentAsTemplate() {
+      const nameInput = document.getElementById('new-template-name');
+      const name = nameInput ? nameInput.value.trim() : '';
+      if (!name) return alert('請輸入食物範本名稱');
+
+      const getNum = (id) => {
+        const el = document.getElementById(id);
+        return el ? (parseFloat(el.value) || 0) : 0;
+      };
+
+      const getStr = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value : '';
+      };
+
+      const aaArr = [];
+      for(let i=1; i<=18; i++) aaArr.push(getNum(`nutri-aa-${i}`));
+      const vitArr = ['a','b1','b2','b6','b12','c','d','e','niacin','folate','pantothenic','biotin'].map(v => getNum(`nutri-vit-${v}`));
+      const minArr = ['sodium','calcium','phosphorus','iron','iodine','magnesium','zinc','potassium','copper','manganese'].map(m => getNum(`nutri-${m}`));
+
+      const templateObj = {
+        name: name,
+        desc: getStr('nutri-meal-desc') || name,
+        water: getNum('nutri-water'),
+        calories: getNum('nutri-calories'),
+        protein: getNum('nutri-protein'),
+        fat: getNum('nutri-fat'),
+        carb: getNum('nutri-carb'),
+        satFat: getNum('nutri-sat-fat'),
+        transFat: getNum('nutri-trans-fat'),
+        sugar: getNum('nutri-sugar'),
+        fiber: getNum('nutri-fiber'),
+        aa: aaArr,
+        vitamins: vitArr,
+        minerals: minArr
+      };
+
+      if (!db.foodTemplates) db.foodTemplates = [];
+      db.foodTemplates.push(templateObj);
+      saveDB();
+      nameInput.value = '';
+      renderTemplateSelect();
+      renderTemplateModalList();
+      alert('✅ 成功新增常用食物範本！');
+    }
+
+    function deleteTemplate(idx) {
+      if (confirm('確定要刪除此常用食物範本嗎？')) {
+        db.foodTemplates.splice(idx, 1);
+        saveDB();
+        renderTemplateSelect();
+        renderTemplateModalList();
+      }
+    }
+
+    function applyFoodTemplate() {
+      const select = document.getElementById('template-select');
+      if (!select || select.value === '') return alert('請先選擇一個常用食物範本');
+      const idx = parseInt(select.value);
+      const t = db.foodTemplates[idx];
+      if (!t) return;
+
+      const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val !== undefined && val !== null ? val : '';
+      };
+
+      setVal('nutri-meal-desc', t.desc || t.name);
+      setVal('nutri-water', t.water);
+      setVal('nutri-calories', t.calories);
+      setVal('nutri-protein', t.protein);
+      setVal('nutri-fat', t.fat);
+      setVal('nutri-carb', t.carb);
+      setVal('nutri-sat-fat', t.satFat);
+      setVal('nutri-trans-fat', t.transFat);
+      setVal('nutri-sugar', t.sugar);
+      setVal('nutri-fiber', t.fiber);
+
+      for(let i=1; i<=18; i++) setVal(`nutri-aa-${i}`, t.aa[i-1]);
+      const vitKeys = ['a','b1','b2','b6','b12','c','d','e','niacin','folate','pantothenic','biotin'];
+      vitKeys.forEach((v, i) => setVal(`nutri-vit-${v}`, t.vitamins[i]));
+      const minKeys = ['sodium','calcium','phosphorus','iron','iodine','magnesium','zinc','potassium','copper','manganese'];
+      minKeys.forEach((m, i) => setVal(`nutri-${m}`, t.minerals[i]));
+
+      alert(`⚡ 已成功代入範本：「${t.name}」的營養數據！`);
     }
 
     // 新增餐點並自動累加至當日總量
@@ -942,9 +1118,7 @@
         };
 
         const aaArr = [];
-        for(let i=1; i<=18; i++) {
-          aaArr.push(getNum(`nutri-aa-${i}`));
-        }
+        for(let i=1; i<=18; i++) aaArr.push(getNum(`nutri-aa-${i}`));
 
         const vitArr = ['a','b1','b2','b6','b12','c','d','e','niacin','folate','pantothenic','biotin'].map(v => 
           getNum(`nutri-vit-${v}`)
@@ -1052,7 +1226,6 @@
       if (confirm(`確定要結算並封存 ${dateKey} 的今日營養數據嗎？\n\n• 封存後，當前紀錄將完整保留在「歷史列表」中供隨時詳細檢視。\n• 同時將清空當前餐點，讓您可以開始記錄新的一天。`)) {
         if (u && u.records && u.records[dateKey]) {
           recalculateDailyNutrition(dateKey);
-          // 將當前餐點歸檔至 archivedMeals 以供歷史檢視，並保留 nutrition 總結
           u.records[dateKey].archivedMeals = [...(u.records[dateKey].meals || [])];
           u.records[dateKey].meals = [];
 
@@ -1152,13 +1325,11 @@
           </div>
           <span style="color: var(--primary); font-size: 14px;">詳細明細 &rsaquo;</span>
         `;
-        // 點擊時彈出詳細明細報告
         li.onclick = () => showHistoryDetailModal(dateStr);
         listEl.appendChild(li);
       });
     }
 
-    // 顯示詳細歷史報告 Modal
     function showHistoryDetailModal(dateStr) {
       const u = db.users[currentUserIndex];
       const rec = u.records[dateStr];
@@ -1170,7 +1341,6 @@
 
       let html = '';
 
-      // 1. 身體組成與體脂數據
       html += `<div class="section-title">一、 身體組成與生活評估</div>`;
       if (rec.weight) {
         html += `
@@ -1184,7 +1354,6 @@
         html += `<div style="font-size: 13px; color: var(--sub-text); margin-bottom: 12px;">當日無體脂機量測數據</div>`;
       }
 
-      // 2. 營養總結
       html += `<div class="section-title">二、 當日營養素總攝取量</div>`;
       if (rec.nutrition) {
         const nut = rec.nutrition;
@@ -1198,7 +1367,6 @@
         html += `<div style="font-size: 13px; color: var(--sub-text); margin-bottom: 12px;">當日無營養素攝取紀錄</div>`;
       }
 
-      // 3. 各餐詳細明細
       const allMeals = [...(rec.meals || []), ...(rec.archivedMeals || [])];
       html += `<div class="section-title">三、 當日各餐進食明細 (${allMeals.length} 餐)</div>`;
       if (allMeals.length > 0) {
