@@ -49,7 +49,6 @@
             user-select: none;
         }
 
-        /* 預設為行動端/小螢幕滿版版型 */
         body {
             background-color: var(--bg-primary);
             color: var(--text-primary);
@@ -60,9 +59,6 @@
             min-height: 100vh;
         }
 
-        /* -------------------------------------------------- */
-        /* 電腦 Web 模式（當螢幕寬度達 768px 以上時觸發）        */
-        /* -------------------------------------------------- */
         @media (min-width: 768px) {
             body {
                 background-color: #121212;
@@ -81,7 +77,7 @@
                 box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
                 overflow: hidden;
                 position: relative;
-                padding-bottom: 80px; /* 給底部 Tab 空間 */
+                padding-bottom: 80px;
             }
 
             .tab-bar {
@@ -171,7 +167,7 @@
             border: 1px solid var(--border-color);
             background: var(--bg-primary);
             color: var(--text-primary);
-            font-size: 16px; /* 設為 16px 防止 iOS Safari 自動對焦點放大 */
+            font-size: 16px;
             outline: none;
         }
 
@@ -364,7 +360,6 @@
             color: white;
         }
 
-        /* Sync Status Pill */
         .sync-badge {
             display: inline-flex;
             align-items: center;
@@ -533,7 +528,6 @@
     <div id="view-settings" class="view">
         <div class="header">系統設定與雲端同步</div>
         
-        <!-- 雲端同步狀態卡片 -->
         <div class="card">
             <h3 style="font-size: 16px; margin-bottom: 8px;">☁️ Firebase 雲端自動同步</h3>
             <div id="sync-status" class="sync-badge">
@@ -555,7 +549,6 @@
             </div>
         </div>
 
-        <!-- 本機備份 -->
         <div class="card">
             <h3 style="font-size: 16px; margin-bottom: 8px;">📲 本機檔案備份與匯入</h3>
             <div style="display: flex; gap: 8px; margin-bottom: 10px;">
@@ -596,28 +589,38 @@
 </div>
 
 <script>
-    // 全局狀態管理
-    let state = JSON.parse(localStorage.getItem('time_app_data')) || {
-        quickNotes: [],
-        routines: [],
-        matrix: { q1: [], q2: [], q3: [], q4: [] },
-        plans: { year: [], quarter: [], month: [], week: [], day: [] },
-        timeline: {
-            weekday: {},
-            weekend: {}
-        },
-        gcalUrl: "",
-        firebaseConfig: "",
-        syncKey: ""
-    };
-
-    // 確保 timeline 資料結構健全（防範升級舊版本數據）
-    if (!state.timeline || typeof state.timeline !== 'object') {
-        state.timeline = { weekday: {}, weekend: {} };
-    } else {
-        if (!state.timeline.weekday) state.timeline.weekday = {};
-        if (!state.timeline.weekend) state.timeline.weekend = {};
+    // 資料結構健全防護處理函式
+    function sanitizeState(loadedData) {
+        let base = loadedData && typeof loadedData === 'object' ? loadedData : {};
+        if (!base.quickNotes) base.quickNotes = [];
+        if (!base.routines) base.routines = [];
+        if (!base.matrix) base.matrix = { q1: [], q2: [], q3: [], q4: [] };
+        else {
+            if (!base.matrix.q1) base.matrix.q1 = [];
+            if (!base.matrix.q2) base.matrix.q2 = [];
+            if (!base.matrix.q3) base.matrix.q3 = [];
+            if (!base.matrix.q4) base.matrix.q4 = [];
+        }
+        if (!base.plans) base.plans = { year: [], quarter: [], month: [], week: [], day: [] };
+        else {
+            ['year', 'quarter', 'month', 'week', 'day'].forEach(k => {
+                if (!base.plans[k]) base.plans[k] = [];
+            });
+        }
+        if (!base.timeline || typeof base.timeline !== 'object') {
+            base.timeline = { weekday: {}, weekend: {} };
+        } else {
+            if (!base.timeline.weekday) base.timeline.weekday = {};
+            if (!base.timeline.weekend) base.timeline.weekend = {};
+        }
+        if (base.gcalUrl === undefined) base.gcalUrl = "";
+        if (base.firebaseConfig === undefined) base.firebaseConfig = "";
+        if (base.syncKey === undefined) base.syncKey = "";
+        return base;
     }
+
+    // 全局狀態管理初始化
+    let state = sanitizeState(JSON.parse(localStorage.getItem('time_app_data')));
 
     let dbRef = null;
     let isRemoteUpdating = false;
@@ -641,7 +644,6 @@
         }
     };
 
-    // 初始化 Firebase 同步機制
     function initFirebase() {
         if (!state.firebaseConfig || !state.syncKey) {
             updateSyncBadge(false, '未設定雲端同步 (離線單機版)');
@@ -669,11 +671,7 @@
                 const remoteData = snapshot.val();
                 if (remoteData) {
                     isRemoteUpdating = true;
-                    state = Object.assign({}, state, remoteData);
-                    if (!state.timeline) state.timeline = { weekday: {}, weekend: {} };
-                    if (!state.timeline.weekday) state.timeline.weekday = {};
-                    if (!state.timeline.weekend) state.timeline.weekend = {};
-                    
+                    state = sanitizeState(Object.assign({}, state, remoteData));
                     localStorage.setItem('time_app_data', JSON.stringify(state));
                     renderAll();
                     initTimeline();
@@ -786,7 +784,7 @@
         currentTimelineMode = mode;
         document.getElementById('btn-weekday').classList.toggle('active', mode === 'weekday');
         document.getElementById('btn-weekend').classList.toggle('active', mode === 'weekend');
-        timelineHistory = []; // 切換模式時重置復原紀錄，避免跨模式誤復原
+        timelineHistory = [];
         initTimeline();
     }
 
@@ -1046,18 +1044,17 @@
         reader.onload = function(e) {
             try {
                 const importedData = JSON.parse(e.target.result);
-                if (importedData && typeof importedData === 'object') {
-                    state = Object.assign({}, state, importedData);
-                    if (!state.timeline) state.timeline = { weekday: {}, weekend: {} };
-                    if (!state.timeline.weekday) state.timeline.weekday = {};
-                    if (!state.timeline.weekend) state.timeline.weekend = {};
-                    
-                    saveData();
-                    initTimeline();
-                    alert('資料備份已成功復原並同步！');
-                }
+                // 使用 sanitizeState 確保匯入的舊版或不完整 JSON 資料結構安全完整
+                state = sanitizeState(Object.assign({}, state, importedData));
+                saveData();
+                initTimeline();
+                alert('資料備份已成功復原並同步！');
             } catch (err) {
+                console.error(err);
                 alert('匯入失敗：格式不正確。');
+            } finally {
+                // 清空 input 檔案選擇，允許重複選擇同一個檔案
+                event.target.value = '';
             }
         };
         if (event.target.files[0]) {
